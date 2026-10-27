@@ -6,7 +6,7 @@
 <title>Brainwave Tone Studio</title>
 <meta name="description" content="A tone and binaural-beat generator with rhythm notation, piano notes, a breathing pacer and cited sources. Made by Ivan.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Music&display=swap">
 <style>
 /* Layout: a "console" — live readout + scope on the left, controls on the right; music, reference and pacer panels below. */
 :root {
@@ -24,6 +24,7 @@
   --left: #6bb7ce; --right: #e39a69; --soft: #1d2834; --key: #d9e0e7; --keyblack: #0a0f14; color-scheme: dark }
 
 * { box-sizing: border-box }
+[hidden] { display: none !important }
 body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body);
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 56px; }
 .wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 28px }
@@ -93,6 +94,10 @@ input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--left) }
 .nh.on { fill: var(--right) }
 .nh.hollow.on { stroke: var(--right); fill: var(--right) }
 .svgtext { fill: var(--ink); font-family: var(--display) }
+.lyr-label { fill: var(--left); font: 500 11px var(--mono) }
+.lh, .lh-steady { fill: var(--left); opacity: .45; transition: opacity .08s }
+.lh.on, .lh-steady.on { opacity: 1 }
+.lh.on { fill: var(--right) }
 .beat-arrow { fill: var(--right); transition: transform .12s ease-out, opacity .2s }
 .beat-arrow text { font: 600 13px var(--mono) }
 .beat-arrow.idle { opacity: .35 }
@@ -137,6 +142,64 @@ td.mono { white-space: nowrap }
 .layer-opts label { display: inline-flex; gap: 6px; align-items: center }
 .layer-info { font-size: .86rem; color: var(--muted) }
 .layer-info b { color: var(--ink); font-weight: 500 }
+.wave-seg { grid-auto-flow: column; min-width: min(100%, 20rem); background: var(--surface) }
+.wave-seg button { padding: 7px 6px; font-size: .82rem }
+.imap { overflow-x: auto; display: grid; gap: 6px }
+.imap svg { width: 100%; min-width: 560px; height: auto; display: block }
+.mhead { fill: var(--muted); font: 600 10.5px var(--body); letter-spacing: .06em; text-transform: uppercase }
+.mlab { fill: var(--ink); font: 500 11px var(--mono) }
+.msub { fill: var(--muted); font: 9.5px var(--mono) }
+.msub.warn { fill: var(--right) }
+.mrule { stroke: var(--line); stroke-width: 2 }
+.mtick { stroke: var(--line); stroke-width: 1 }
+.mk { cursor: pointer; outline: none }
+.mk circle { fill: var(--surface); stroke: var(--left); stroke-width: 2; transition: fill .12s }
+.mk:hover circle { fill: var(--soft) }
+.mk.active circle { fill: var(--left) }
+.mk:focus-visible circle { stroke: var(--right); stroke-width: 3 }
+.mk.off { opacity: .25; cursor: default }
+.mk.warn circle { stroke: var(--right) }
+.mk.warn.active circle { fill: var(--right) }
+.mguide { fill: none; stroke: var(--line); stroke-width: 1.5 }
+.mguide.dashed { stroke-dasharray: 3 5 }
+.staffbox { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 14px }
+.staffwrap { overflow-x: auto }
+.staffwrap svg { width: 100%; min-width: 480px; height: auto; display: block }
+.clef { fill: var(--ink); font-family: "Noto Music", "Apple Symbols", "Segoe UI Symbol", serif }
+.snote { fill: var(--surface); stroke: var(--ink); stroke-width: 2.2 }
+.snote.car { stroke: var(--left); fill: var(--left) }
+.sacc { fill: var(--ink); font: 18px "Noto Music", "Apple Symbols", "Segoe UI Symbol", serif }
+.l-fill { fill: var(--left) }
+.wcenter { fill: var(--soft); stroke: var(--right); stroke-width: 2 }
+.wlab { fill: var(--ink); font: 600 10.5px var(--mono); pointer-events: none }
+.wsub { fill: var(--muted); font: 8.5px var(--mono); pointer-events: none }
+.mk.active .wlab, .mk.active .wsub { fill: var(--surface) }
+.key rect { stroke: var(--line); stroke-width: 1 }
+.key.w rect { fill: var(--key) }
+.key.b rect { fill: var(--keyblack) }
+.key.mk { cursor: pointer }
+.key.mk:hover rect { stroke: var(--left); stroke-width: 2 }
+.key.mk:focus-visible rect { stroke: var(--right); stroke-width: 3 }
+.key.active.w rect, .key.active.b rect { fill: var(--left) }
+.key.center rect { stroke: var(--right); stroke-width: 2.5 }
+.key.off:not(.center) rect { opacity: .4 }
+.klab { fill: #1c2530; font: 600 11px var(--mono); pointer-events: none }
+.ksub { fill: #4f5b68; font: 9.5px var(--mono); pointer-events: none }
+.klet { fill: #4f5b68; font: 500 10px var(--mono); pointer-events: none }
+.klet.bl { fill: #c9d2db }
+.key.active .klab, .key.active .ksub, .key.active .klet { fill: #fff }
+.sw { fill: var(--key); stroke: var(--line) }
+.sb { fill: var(--keyblack) }
+.pulse-seg { grid-auto-flow: column; min-width: min(100%, 26rem); background: var(--surface) }
+.pulse-seg button { padding: 7px 6px; font-size: .82rem; white-space: nowrap }
+@media (max-width: 480px) { .pulse-seg { grid-auto-flow: row; grid-template-columns: repeat(3, 1fr); min-width: 100% } .pulse-seg button { border-top: 1px solid var(--line) } }
+.pattern { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; align-items: center; margin-top: 8px; max-width: 22rem }
+.plabel { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted) }
+.pcells { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; align-items: center }
+.pcells i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--line); justify-self: center }
+.pcells i.on { background: var(--right); border-color: var(--right) }
+.pcells.tone i.on { background: var(--left); border-color: var(--left) }
+.pcells .steady { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--left) }
 .x { border: 0; background: transparent; color: var(--muted); font-size: 1.2rem; line-height: 1; padding: 4px 6px }
 
 /* breathing pacer */
@@ -218,16 +281,17 @@ sup a { text-decoration: none; font-family: var(--mono); font-size: .75em; paddi
           <button data-mode="binaural" aria-pressed="true">Binaural</button>
           <button data-mode="isochronic" aria-pressed="false">Isochronic</button>
           <button data-mode="monaural" aria-pressed="false">Monaural</button>
-          <button data-mode="pure" aria-pressed="false">Pure tone</button>
+          <button data-mode="pure" aria-pressed="false">Single tone</button>
         </div>
       </div>
       <div class="field">
         <div class="field-head"><label class="label" for="carrierNum">Carrier tone (left ear)</label>
           <span><input type="number" id="carrierNum" min="20" max="1500" step="0.1"> <span class="unit">Hz</span></span></div>
         <input type="range" id="carrier" min="20" max="1000" step="0.5" aria-label="Carrier tone">
+        <div><button class="ghost" id="secondBtn" aria-pressed="true"></button></div>
       </div>
       <div class="field r" id="beatField">
-        <div class="field-head"><label class="label" for="beatNum">Beat frequency</label>
+        <div class="field-head"><label class="label" for="beatNum" id="beatLabel">Beat frequency</label>
           <span><input type="number" id="beatNum" min="0.5" max="45" step="0.1"> <span class="unit">Hz</span></span></div>
         <input type="range" id="beat" min="0.5" max="45" step="0.1" aria-label="Beat frequency">
       </div>
@@ -323,21 +387,43 @@ sup a { text-decoration: none; font-family: var(--mono); font-size: .75em; paddi
   </section>
 
   <section class="panel">
-    <div class="two" style="align-items:end">
+    <div>
+      <h2>Extra tones</h2>
+      <p class="hint" style="margin-top:4px">Layer tones on top of the main sound. Tap any dot on the map to add that tone, built from your carrier; tap a filled dot again to remove it. Each tone shows its nearest piano key and its relation to the carrier, and can pulse along with the beat.</p>
+    </div>
+    <div class="pacer-row">
+      <div class="seg" id="mapView" role="group" aria-label="Tone picker view">
+        <button data-v="map" aria-pressed="true">Map</button>
+        <button data-v="keys" aria-pressed="false">Keyboard</button>
+        <button data-v="wheel" aria-pressed="false">Wheel</button>
+      </div>
+      <label class="hint" id="keyCenterField" style="display:inline-flex; gap:8px; align-items:center">Center key
+        <select id="keyCenter"><option value="0">C (easiest to read)</option><option value="1">C♯</option><option value="2">D</option><option value="3">D♯</option><option value="4">E</option><option value="5">F</option><option value="6">F♯</option><option value="7">G</option><option value="8">G♯</option><option value="9">A</option><option value="10">A♯</option><option value="11">B</option><option value="carrier">Carrier's real note</option></select>
+      </label>
+      <label class="hint" id="centerOctField" style="display:inline-flex; gap:8px; align-items:center">Octave
+        <select id="centerOct"><option value="3">3 (below middle C)</option><option value="4">4 (middle C)</option><option value="5">5 (above middle C)</option></select>
+      </label>
+    </div>
+    <div class="imap" id="imap"></div>
+    <div class="staffbox">
       <div>
-        <h2>Extra tones</h2>
-        <p class="hint" style="margin-top:4px">Layer pure tones on top of the main sound. Each one shows its nearest piano key and how it relates to the carrier, and can pulse along with the beat.</p>
+        <span class="label">On the staff</span>
+        <p class="hint">Your carrier (in color) and every extra tone that is switched on, written on a grand staff. The carrier sits on the center key you picked above; middle C (C4) is the easiest to read. Notes are spelled by interval (a minor third above C is E♭, not D♯). The small number by a note is how many cents the pure ratio is off that piano key.</p>
       </div>
-      <div class="field">
-        <span class="label">Add a tone from the carrier's harmonic series</span>
-        <div class="chips" id="harmonicChips"></div>
-      </div>
+      <div class="staffwrap" id="staff"></div>
     </div>
     <div class="layers" id="layers"></div>
     <div><button class="ghost" id="addLayer">Add a custom tone</button></div>
     <div class="prose">
       <p><strong>How the ratios work.</strong> Any vibrating string or column of air sounds its base frequency plus whole-number multiples of it: 2×, 3×, 4×, 5× and so on. This is the harmonic series, and musical intervals come straight from it. Harmonics 1 → 2 make an octave (2 : 1), 2 → 3 a perfect fifth (3 : 2), 3 → 4 a perfect fourth (4 : 3), 4 → 5 a major third (5 : 4). Tones in simple ratios with the carrier blend smoothly. Tones that are slightly off a simple ratio create a slow wobble of their own.</p>
-      <p><strong>Pulse options.</strong> "Every 2nd beat" switches the tone on at half the beat rate, "every 3rd" at a third, and so on. Over a 6 Hz theta beat, a tone pulsing every 2nd beat gives 3 pulses a second, a 2-against-1 rhythm. Pulsed layers can drift slightly out of step with a binaural beat because the brain creates that beat, not the speaker.</p>
+      <p><strong>What the pulse buttons mean.</strong> A <em>pulse</em> is one wobble of the main beat. A 6 Hz beat has 6 pulses every second. The buttons choose how often an extra tone sounds against those pulses:</p>
+      <ul>
+        <li><strong>Steady</strong>: the tone plays continuously, like a drone under the beat.</li>
+        <li><strong>Every pulse</strong>: the tone switches on and off with every pulse, 6 times a second at 6 Hz, in unison with the beat.</li>
+        <li><strong>Every 2nd</strong>: the tone sounds on pulses 1, 3, 5…, half as often (3 times a second at 6 Hz). Like a drummer hitting on every other count.</li>
+        <li><strong>Every 3rd</strong> and <strong>every 4th</strong>: pulses 1, 4, 7… or 1, 5, 9…, giving 2 or 1.5 times a second at 6 Hz.</li>
+      </ul>
+      <p>The dot pattern under each tone shows this: the top row is the main beat, the bottom row is when that tone sounds. Stacking two tones on different settings builds layered rhythms (for example 2 against 3). In binaural mode the pulses can drift slightly out of step with the beat, because your brain creates that beat rather than the speaker.</p>
     </div>
   </section>
 
@@ -414,6 +500,28 @@ sup a { text-decoration: none; font-family: var(--mono); font-size: .75em; paddi
   </section>
 
   <section class="prose">
+    <h2>What the tones are made of</h2>
+    <p><strong>The main tones are always sine waves</strong>: one frequency with no harmonics, like a tuning fork. Extra tones can use any of the shapes below. Keeping the main tones pure matters for binaural beats. A tone with harmonics also beats at every harmonic (the 2nd harmonic beats at 2× the beat rate, the 3rd at 3×), which blurs the single beat you want. Other wave shapes are the same note with a different set of harmonics added:</p>
+    <ul>
+      <li><strong>Sine</strong>: the fundamental only. Smooth and pure; a flute or a whistle comes close.</li>
+      <li><strong>Triangle</strong>: odd harmonics only (1, 3, 5, 7…) that fade fast (1/n²). Soft and mellow, a little brighter than a sine; ocarina-like.</li>
+      <li><strong>Square</strong>: odd harmonics only, fading slowly (1/n). Hollow and reedy; close to a clarinet's low notes.</li>
+      <li><strong>Sawtooth</strong>: every harmonic (1, 2, 3, 4…), fading at 1/n. Bright and buzzy; the raw sound behind synth strings and brass.</li>
+      <li><strong>Pulse</strong>: a square wave with an uneven on/off split. Changing the split removes different harmonics, from hollow to thin and nasal.</li>
+    </ul>
+    <h3>Why a violin and a clarinet sound different on the same note</h3>
+    <p>Pitch is set by the fundamental. Timbre, the color of the sound, comes from several things layered together:</p>
+    <ul>
+      <li><strong>The harmonic recipe.</strong> A bowed string moves in a sawtooth-like pattern, so a violin has all the harmonics. A clarinet's closed cylindrical tube favors the odd harmonics, much like a square wave. A flute is close to a sine with a little breath noise.</li>
+      <li><strong>Body resonances (formants).</strong> An instrument's body boosts fixed frequency bands whatever note is played, such as the violin's wooden body or the shape of your mouth for each vowel. This is why a violin sounds like a violin across its whole range.</li>
+      <li><strong>The envelope.</strong> How the sound starts and fades. A plucked string jumps in and dies away, while a bowed string or a wind instrument swells in and holds.</li>
+      <li><strong>Vibrato.</strong> Players wobble the pitch about 5–7 times a second, by roughly a quarter of a semitone. It is a big part of what makes a tone sound alive and played by hand.</li>
+      <li><strong>Noise and imperfection.</strong> Bow scrape and breath add noise. Piano and bell harmonics sit slightly off the exact multiples ("inharmonicity"); bells are so far off they sound clangy.</li>
+    </ul>
+    <p>Synthesizers copy these in a few ways. <strong>Additive</strong> synthesis adds sine harmonics at chosen strengths. <strong>Subtractive</strong> synthesis starts with a bright saw or square wave and filters harmonics away. <strong>FM</strong> synthesis makes bells and electric pianos. <strong>Physical modeling</strong> simulates the string or tube itself. The browser can do the first two directly.</p>
+  </section>
+
+  <section class="prose">
     <h2>Before you use it</h2>
     <p><strong>Binaural needs headphones.</strong> Each ear has to get its own tone. Through speakers the two mix in the air and become a monaural beat. Isochronic and monaural beats work on speakers.</p>
     <p><strong>Keep it quiet and safe.</strong> Start low, since these tones can get loud in headphones. Don't listen while driving. People with seizure disorders should skip rhythmic pulsing sounds or check with their doctor first. Tones do not stimulate the vagus nerve directly. Slow breathing does the measurable work.<sup><a href="#ref-zaccaro">10</a></sup></p>
@@ -469,16 +577,17 @@ const HINTS = {
   binaural: 'Headphones required. Left ear hears the carrier, right ear hears carrier + beat; your brain perceives the difference as a slow beat.',
   isochronic: 'Works on speakers. One tone switched on and off at the beat rate, giving a distinct pulse.',
   monaural: 'Works on speakers. Both tones mixed together, so the beat is a real, audible wobble.',
-  pure: 'A single steady tone at the carrier frequency, for solfeggio, 432 Hz and similar tones.'
+  pure: 'One steady sine wave at the carrier, with no second tone, for solfeggio, 432 Hz and building your own sound with extra tones. The pulse rate still drives any pulsing extra tones and the rhythm notation.'
 };
-const HARMONICS = [
-  { r: 0.5, name: 'Octave below', frac: '1 : 2' }, { r: 1.25, name: 'Major third', frac: '5 : 4' },
-  { r: 4 / 3, name: 'Perfect fourth', frac: '4 : 3' }, { r: 1.5, name: 'Perfect fifth', frac: '3 : 2' },
-  { r: 2, name: 'Octave', frac: '2 : 1' }, { r: 3, name: 'Harmonic 3', frac: '3 : 1' },
-  { r: 5, name: 'Harmonic 5', frac: '5 : 1' }
+// the twelve intervals of one octave as pure (5-limit just) ratios
+const IV = [
+  [16, 15, 'm2', 'minor second'], [9, 8, 'M2', 'major second'], [6, 5, 'm3', 'minor third'], [5, 4, 'M3', 'major third'],
+  [4, 3, 'P4', 'perfect fourth'], [45, 32, 'TT', 'tritone'], [3, 2, 'P5', 'perfect fifth'], [8, 5, 'm6', 'minor sixth'],
+  [5, 3, 'M6', 'major sixth'], [9, 5, 'm7', 'minor seventh'], [15, 8, 'M7', 'major seventh'], [2, 1, 'P8', 'octave']
 ];
+const TONE_MIN = 20, TONE_MAX = 4000;
 
-const S = { mode: 'binaural', carrier: 200, beat: 10, vol: 35, minutes: 20, tempo: 60, playing: false,
+const S = { mapView: 'map', keyCenter: 0, centerOct: 4, mode: 'binaural', carrier: 200, beat: 10, vol: 35, minutes: 20, tempo: 60, playing: false,
   layers: [
     { id: 1, hz: 300, vol: 30, on: false, pulse: 2, follow: true, ratio: 1.5 },
     { id: 2, hz: 110, vol: 25, on: false, pulse: 0, follow: false, ratio: 1 }
@@ -636,6 +745,14 @@ function swapVoice() {
 }
 
 const layerHz = l => l.follow ? S.carrier * l.ratio : l.hz;
+// wave shapes for extra tones; gain evens out loudness, since harmonics make square and saw sound louder
+const WAVES = {
+  sine: { name: 'Sine', gain: 1, harm: [1], desc: 'the fundamental only, pure and smooth' },
+  triangle: { name: 'Triangle', gain: 0.9, harm: [1, 3, 5, 7], desc: 'adds odd harmonics that fade fast, soft and mellow' },
+  square: { name: 'Square', gain: 0.45, harm: [1, 3, 5, 7], desc: 'adds odd harmonics that fade slowly, hollow and reedy' },
+  sawtooth: { name: 'Sawtooth', gain: 0.5, harm: [1, 2, 3, 4], desc: 'adds every harmonic, bright and buzzy' }
+};
+const waveOf = l => l.wave || 'sine';
 function killLayer(id) {
   const n = layerNodes.get(id); if (!n) return;
   n.g.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
@@ -652,14 +769,16 @@ function syncLayers() {
     if (n && n.pulse !== l.pulse) { killLayer(l.id); n = null; }
     if (!n) {
       const o = osc(layerHz(l)), pg = gain(l.pulse ? 0 : 1), g = gain(0), oscs = [o];
+      o.type = waveOf(l);
       let lfo = null;
       if (l.pulse) { lfo = osc(S.beat / l.pulse); lfo.connect(pulseShaper(1)).connect(pg.gain); oscs.push(lfo); }
       o.connect(pg).connect(g).connect(master);
       n = { o, lfo, g, oscs, pulse: l.pulse }; layerNodes.set(l.id, n);
     }
     glide(n.o.frequency, layerHz(l));
+    if (n.o.type !== waveOf(l)) n.o.type = waveOf(l);
     if (n.lfo) glide(n.lfo.frequency, S.beat / l.pulse);
-    n.g.gain.setTargetAtTime(l.vol / 100 * 0.5, ctx.currentTime, 0.1);
+    n.g.gain.setTargetAtTime(l.vol / 100 * 0.5 * WAVES[waveOf(l)].gain, ctx.currentTime, 0.1);
   }
 }
 
@@ -706,7 +825,9 @@ function updateStatus() {
 
 function render() {
   const pure = S.mode === 'pure';
-  $('beatField').hidden = pure;
+  $('beatLabel').textContent = pure ? 'Pulse rate (for extra tones)' : 'Beat frequency';
+  $('secondBtn').textContent = pure ? `Turn on second tone (${fmt(S.carrier + S.beat)} Hz)` : `Turn off second tone (${fmt(S.carrier + S.beat)} Hz)`;
+  $('secondBtn').setAttribute('aria-pressed', !pure);
   $('readoutLabel').textContent = pure ? 'Tone' : 'Beat frequency';
   $('bigNum').textContent = fmt(pure ? S.carrier : S.beat);
   $('bandName').textContent = pure ? noteOf(S.carrier).name : bandOf(S.beat).toLowerCase();
@@ -770,14 +891,15 @@ function notationSvg(n) {
   const head = (cx, hollow) => `<ellipse class="nh${hollow ? ' hollow' : ''}" data-i="${idx++}" cx="${cx}" cy="${mid}" rx="${hollow ? 7 : 6.2}" ry="${hollow ? 5 : 4.6}" transform="rotate(-20 ${cx} ${mid})"/>`;
   const stem = cx => `<line class="inkline" x1="${cx + 5.6}" x2="${cx + 5.6}" y1="${mid - 1}" y2="30" stroke-width="1.4"/>`;
   beatXs = []; perBeat = n < 1 ? 1 : n;
-  if (n === 0.25) { beatXs.push((x0 + x1) / 2); out.push(head(beatXs[0], true)); }
-  else if (n === 0.5) { [0, 1].forEach(j => { const cx = x0 + (x1 - x0) * (j + 0.5) / 2; beatXs.push(cx); out.push(head(cx, true), stem(cx)); }); }
+  const noteXs = [];
+  if (n === 0.25) { beatXs.push((x0 + x1) / 2); noteXs.push(beatXs[0]); out.push(head(beatXs[0], true)); }
+  else if (n === 0.5) { [0, 1].forEach(j => { const cx = x0 + (x1 - x0) * (j + 0.5) / 2; beatXs.push(cx); noteXs.push(cx); out.push(head(cx, true), stem(cx)); }); }
   else {
     const beams = Math.floor(Math.log2(n)), gw = (x1 - x0) / groups;
     for (let g = 0; g < groups; g++) {
       const gx = x0 + g * gw, xs = [];
       for (let j = 0; j < n; j++) xs.push(gx + gw * (j + 0.5) / n - 3);
-      beatXs.push(xs[0]);
+      beatXs.push(xs[0]); noteXs.push(...xs);
       xs.forEach(cx => out.push(head(cx, false), stem(cx)));
       if (n > 1) for (let b = 0; b < beams; b++) out.push(`<rect class="ink" x="${xs[0] + 4.9}" y="${30 + b * 6}" width="${xs[n - 1] - xs[0] + 1.4}" height="3.6"/>`);
       if (!isPow2(n)) out.push(`<text class="svgtext" x="${(xs[0] + xs[n - 1]) / 2 + 5}" y="23" font-size="14" font-style="italic" text-anchor="middle">${n}</text>`);
@@ -785,18 +907,28 @@ function notationSvg(n) {
   }
   // arrow over the first note of the current beat; it waits on beat 1 while stopped
   out.push(`<g id="beatArrow" class="beat-arrow idle" style="transform: translateX(${beatXs[0]}px)"><path d="M-8 0 H8 L0 14 Z"/><text x="11" y="12">1</text></g>`);
+  // one extra line per active extra tone: a dot on each pulse it sounds on, or a held bar when steady
+  const act = S.layers.filter(l => l.on);
+  act.forEach((l, j) => {
+    const y = 104 + j * 24;
+    out.push(`<line class="st" x1="84" x2="584" y1="${y}" y2="${y}" stroke-dasharray="2 4"/>`);
+    out.push(`<text class="lyr-label" x="10" y="${y + 4}">${fmtHz(layerHz(l))} Hz</text>`);
+    if (!l.pulse) out.push(`<rect class="lh-steady" x="${noteXs[0] - 6}" y="${y - 3}" width="${noteXs[noteXs.length - 1] - noteXs[0] + 12}" height="6" rx="3"/>`);
+    else noteXs.forEach((cx, i) => { if (i % l.pulse === 0) out.push(`<circle class="lh" data-l="${j}" data-i="${i}" cx="${cx}" cy="${y}" r="5"/>`); });
+  });
   notationTotal = idx; litNote = -1; litBeat = -1;
-  return `<svg viewBox="0 0 600 100" role="img" aria-label="${subName(n)[0]} at quarter note equals ${S.tempo}">${out.join('')}</svg>`;
+  const h = 100 + act.length * 24 + (act.length ? 4 : 0);
+  return `<svg viewBox="0 0 600 ${h}" role="img" aria-label="${subName(n)[0]} at quarter note equals ${S.tempo}">${out.join('')}</svg>`;
 }
 let lastNotationKey = '';
 function renderRhythm() {
-  const beat = S.mode === 'pure' ? 0 : S.beat;
+  const beat = S.beat;
   if (!beat) {
     $('notation').innerHTML = '<p class="hint">Pure tone mode has no beat. Pick another method to see the rhythm.</p>';
     $('rhythmFacts').innerHTML = ''; $('exactChips').innerHTML = ''; lastNotationKey = ''; notationTotal = 0; return;
   }
   document.querySelectorAll('#clockTempos button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.tempo === S.tempo));
-  const f = fitRhythm(beat), key = f.n + '|' + S.tempo;
+  const f = fitRhythm(beat), key = f.n + '|' + S.tempo + '|' + S.layers.filter(l => l.on).map(l => fmt(layerHz(l)) + ':' + l.pulse).join(',');
   if (key !== lastNotationKey) { $('notation').innerHTML = notationSvg(f.n); lastNotationKey = key; }
   const perMin = Math.round(beat * 60);
   const drift = Math.abs(beat - f.n * S.tempo / 60);
@@ -806,6 +938,7 @@ function renderRhythm() {
   ];
   if (!f.exact) rows.push(['Drift', `The beat runs ${beat > f.n * S.tempo / 60 ? 'ahead of' : 'behind'} the notes, slipping one full pulse every ${fmt(1 / drift)} s.`]);
   if (COUNTS[f.n]) rows.push(['Count it', `<span class="mono">${COUNTS[f.n]}</span>`]);
+  if (S.layers.some(l => l.on)) rows.push(['Extra tones', 'Each one gets its own line under the staff: a dot on every pulse it sounds on, or a solid bar if it is steady.']);
   $('rhythmFacts').innerHTML = rows.map(r => `<div class="row"><dt>${r[0]}</dt><dd>${r[1]}</dd></div>`).join('');
   const chips = [];
   for (const n of [1, 2, 3, 4, 6, 8]) {
@@ -924,9 +1057,15 @@ $('minutes').addEventListener('change', e => {
 });
 $('modes').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || b.dataset.mode === S.mode) return;
+  if (S.mode !== 'pure') S.lastMode = S.mode;
   S.mode = b.dataset.mode; swapVoice(); render();
 });
 $('play').addEventListener('click', () => S.playing ? stop() : start());
+// one tap drops the second (right-ear) tone and brings back whichever method was in use
+$('secondBtn').addEventListener('click', () => {
+  if (S.mode === 'pure') S.mode = S.lastMode || 'binaural'; else { S.lastMode = S.mode; S.mode = 'pure'; }
+  swapVoice(); render();
+});
 $('tonePresets').innerHTML = TONES.map(t => `<button class="chip" data-hz="${t.hz}">${t.name}<small>${t.hz}</small></button>`).join('');
 $('tonePresets').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setCarrier(b.dataset.hz); });
 $('bands').innerHTML = BANDS.map(b => `<button class="bandcard" data-band="${b.name}" data-mid="${b.mid}">
@@ -939,17 +1078,24 @@ $('bands').addEventListener('click', e => {
 });
 
 /* ---------- extra tones ---------- */
-const PULSES = [[0, 'Steady'], [1, 'Pulse every beat'], [2, 'Every 2nd beat'], [3, 'Every 3rd beat'], [4, 'Every 4th beat']];
+const PULSES = [[0, 'Steady'], [1, 'Every pulse'], [2, 'Every 2nd'], [3, 'Every 3rd'], [4, 'Every 4th']];
+// two rows of 12 slots: the main beat's pulses, and the ones this tone sounds on
+function pulsePattern(k) {
+  const cells = (on) => Array.from({ length: 12 }, (_, i) => `<i class="${on(i) ? 'on' : ''}"></i>`).join('');
+  return `<span class="pattern" aria-hidden="true"><span class="plabel">Main beat</span><span class="pcells">${cells(() => true)}</span>
+    <span class="plabel">This tone</span><span class="pcells tone">${k ? cells(i => i % k === 0) : '<b class="steady"></b>'}</span></span>`;
+}
 function renderLayers() {
   $('layers').innerHTML = S.layers.map(l => `<div class="layer" data-id="${l.id}">
     <div class="layer-top">
       <input type="checkbox" id="lon${l.id}" data-k="on" ${l.on ? 'checked' : ''} aria-label="Play this tone">
-      <span class="hz"><input type="number" id="lhz${l.id}" data-k="hz" min="20" max="2000" step="0.1" value="${fmt(layerHz(l))}" aria-label="Frequency in Hz"><span class="unit">Hz</span></span>
+      <span class="hz"><input type="number" id="lhz${l.id}" data-k="hz" min="20" max="4000" step="0.1" value="${fmt(layerHz(l))}" aria-label="Frequency in Hz"><span class="unit">Hz</span></span>
       <input type="range" id="lvol${l.id}" data-k="vol" min="0" max="100" value="${l.vol}" aria-label="Volume">
       <button class="x" aria-label="Remove tone">×</button>
     </div>
     <div class="layer-opts">
-      <select id="lpulse${l.id}" data-k="pulse" aria-label="Rhythm">${PULSES.map(p => `<option value="${p[0]}" ${p[0] === l.pulse ? 'selected' : ''}>${p[1]}</option>`).join('')}</select>
+      <div class="seg wave-seg" role="group" aria-label="Wave shape">${Object.entries(WAVES).map(([k, w]) => `<button data-wave="${k}" aria-pressed="${k === waveOf(l)}">${w.name}</button>`).join('')}</div>
+      <div class="seg pulse-seg" role="group" aria-label="How this tone pulses">${PULSES.map(p => `<button data-pulse="${p[0]}" aria-pressed="${p[0] === l.pulse}">${p[1]}</button>`).join('')}</div>
       <label><input type="checkbox" id="lfollow${l.id}" data-k="follow" ${l.follow ? 'checked' : ''}> Follow the carrier</label>
     </div>
     <p class="layer-info" id="linfo${l.id}"></p>
@@ -961,38 +1107,289 @@ function renderLayerInfo() {
     const el = $('linfo' + l.id); if (!el) continue;
     const f = layerHz(l), nt = noteOf(f), lines = intervalReport(f, S.carrier);
     lines[0] += ` · nearest key <b>${nt.name}</b> ${centsTxt(nt.cents)}`;
-    if (l.pulse && S.mode !== 'pure') lines.push(`Pulses ${fmt(S.beat / l.pulse)}×/s, ${fitRhythm(S.beat / l.pulse).short} at ♩ = ${S.tempo}`);
-    if (l.pulse && S.mode === 'pure') lines.push('Pulsing needs a beat; switch away from pure tone.');
-    el.innerHTML = lines.join('<br>');
+    const w = WAVES[waveOf(l)];
+    lines.push(`<b>${w.name} wave</b>: ${w.desc}` + (w.harm.length > 1 ? ` (${w.harm.slice(1).map(h => `${h}× = ${fmtHz(f * h)} Hz`).join(', ')}…)` : '') + '.');
+    row(l.id)?.querySelectorAll('.wave-seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.wave === waveOf(l)));
+    const src = S.mode === 'pure' ? `${fmt(S.beat)} Hz pulse rate` : `${fmt(S.beat)} Hz beat`;
+    if (!l.pulse) lines.push('Steady: plays continuously.');
+    else {
+      const rate = S.beat / l.pulse, ord = ['', '', '2nd', '3rd', '4th'][l.pulse];
+      lines.push(l.pulse === 1
+        ? `Sounds on every pulse of the ${src}: ${fmt(rate)} times a second.`
+        : `Sounds on every ${ord} pulse of the ${src}: ${fmt(rate)} times a second, a ${l.pulse}-against-1 rhythm (${fitRhythm(rate).short} at ♩ = ${S.tempo}).`);
+    }
+    el.innerHTML = lines.join('<br>') + pulsePattern(l.pulse);
+    row(l.id)?.querySelectorAll('.pulse-seg button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.pulse === l.pulse));
     const hzIn = $('lhz' + l.id);
     if (l.follow && document.activeElement !== hzIn) hzIn.value = fmt(f);
   }
+  renderMap();
 }
 $('layers').addEventListener('input', e => {
   const row = e.target.closest('.layer'), k = e.target.dataset.k; if (!row || !k) return;
   const l = S.layers.find(x => x.id == row.dataset.id);
   if (k === 'on') l.on = e.target.checked;
   else if (k === 'vol') l.vol = +e.target.value;
-  else if (k === 'pulse') l.pulse = +e.target.value;
   else if (k === 'follow') { l.follow = e.target.checked; if (l.follow) l.ratio = l.hz / S.carrier; else l.hz = S.carrier * l.ratio; }
-  else if (k === 'hz') { const v = +e.target.value; if (v >= 20 && v <= 2000) { l.hz = v; l.ratio = v / S.carrier; } }
-  renderLayerInfo(); renderNotes(); syncLayers();
+  else if (k === 'hz') { const v = +e.target.value; if (v >= TONE_MIN && v <= TONE_MAX) { l.hz = v; l.ratio = v / S.carrier; } }
+  renderLayerInfo(); renderNotes(); renderRhythm(); syncLayers();
 });
+const row = id => document.querySelector(`.layer[data-id="${id}"]`);
 $('layers').addEventListener('click', e => {
+  const wb = e.target.closest('.wave-seg button');
+  if (wb) {
+    const l = S.layers.find(x => x.id == wb.closest('.layer').dataset.id);
+    l.wave = wb.dataset.wave; renderLayerInfo(); syncLayers(); return;
+  }
+  const pb = e.target.closest('.pulse-seg button');
+  if (pb) {
+    const l = S.layers.find(x => x.id == pb.closest('.layer').dataset.id);
+    l.pulse = +pb.dataset.pulse; renderLayerInfo(); renderRhythm(); syncLayers(); return;
+  }
   if (!e.target.classList.contains('x')) return;
   const id = +e.target.closest('.layer').dataset.id;
-  S.layers = S.layers.filter(l => l.id !== id); syncLayers(); renderLayers(); renderNotes();
+  S.layers = S.layers.filter(l => l.id !== id); syncLayers(); renderLayers(); renderNotes(); renderRhythm();
 });
 $('addLayer').addEventListener('click', () => {
   S.layers.push({ id: nextId++, hz: 432, vol: 30, on: true, pulse: 0, follow: false, ratio: 432 / S.carrier });
-  renderLayers(); renderNotes(); syncLayers();
+  renderLayers(); renderNotes(); renderRhythm(); syncLayers();
 });
-$('harmonicChips').innerHTML = HARMONICS.map((h, i) => `<button class="chip" data-i="${i}">${h.name}<small>${h.frac}</small></button>`).join('');
-$('harmonicChips').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  const h = HARMONICS[+b.dataset.i];
-  S.layers.push({ id: nextId++, hz: S.carrier * h.r, vol: 30, on: true, pulse: 0, follow: true, ratio: h.r });
-  renderLayers(); renderNotes(); syncLayers();
+/* interval map: one octave either side of the carrier on a pitch ruler, then the overtone and undertone series */
+const layerFor = r => S.layers.find(l => Math.abs(cents(layerHz(l) / (S.carrier * r))) < 1);
+// a clickable dot that adds or removes the tone at carrier × r
+function mk(x, y, r, title, opts = {}) {
+  const f = S.carrier * r, off = f < TONE_MIN || f > TONE_MAX, act = !off && layerFor(r);
+  return `<g class="mk${act ? ' active' : ''}${off ? ' off' : ''}${opts.warn ? ' warn' : ''}" data-r="${r}" ${off ? '' : 'tabindex="0" role="button"'} aria-label="${act ? 'Remove' : 'Add'} ${title}, ${fmtHz(f)} Hz">
+    <circle cx="${x}" cy="${y}" r="${opts.size || 7}"/>${opts.inner || ''}<title>${title} · ${fmtHz(f)} Hz${off ? ' (out of range)' : ''}${act ? ' · tap to remove' : ''}</title></g>`;
+}
+const BLACK = [1, 3, 6, 8, 10];
+const centerPc = () => S.keyCenter === 'carrier' ? pcOf(noteOf(S.carrier).midi) : +S.keyCenter;
+function letterFor(k, withOct) {
+  if (S.keyCenter === 'carrier' && withOct) { const m = noteOf(S.carrier).midi + k; return NOTE[pcOf(m)] + (Math.floor(m / 12) - 1); }
+  return NOTE[pcOf(centerPc() + k)];
+}
+// interval k semitones from the carrier, as its pure ratio (one octave either way)
+function ratioForK(k) {
+  if (k === 0) return [1, 1];
+  const [p, q] = IV[Math.abs(k) - 1];
+  return k > 0 ? [p, q] : [q, p];
+}
+function keyLayout(lo, hi, W, x0) {
+  const pc0 = centerPc(), blk = k => BLACK.includes(pcOf(pc0 + k));
+  if (blk(lo)) lo--; if (blk(hi)) hi++;
+  const whites = []; for (let k = lo; k <= hi; k++) if (!blk(k)) whites.push(k);
+  const ww = W / whites.length, bw = ww * 0.6, keys = [];
+  for (let k = lo; k <= hi; k++) {
+    if (!blk(k)) keys.push({ k, black: false, x: x0 + whites.indexOf(k) * ww, w: ww });
+    else keys.push({ k, black: true, x: x0 + (whites.indexOf(k - 1) + 1) * ww - bw / 2, w: bw });
+  }
+  keys.forEach(kk => kk.cx = kk.x + kk.w / 2);
+  return keys;
+}
+function keysSvg() {
+  const out = [], C = S.carrier, top = 58, wh = 112, bh = 62;
+  out.push(`<text class="mhead" x="10" y="12">Intervals on the keyboard · center key ${letterFor(0, true)} = your carrier</text>`);
+  out.push(`<text class="msub" x="10" y="27">← below the carrier</text><text class="msub" x="590" y="27" text-anchor="end">above the carrier →</text>`);
+  const keys = keyLayout(-12, 12, 580, 10);
+  const draw = kk => {
+    const { k, black, x, w, cx } = kk, inRange = k >= -12 && k <= 12;
+    const [p, q] = inRange ? ratioForK(k) : [1, 1], r = p / q, f = C * r;
+    const off = !inRange || f < TONE_MIN || f > TONE_MAX, act = inRange && k !== 0 && !off && layerFor(r), center = k === 0;
+    const click = inRange && !center && !off;
+    const ab = inRange && !center ? IV[Math.abs(k) - 1][2] : '';
+    const name = inRange && !center ? `${IV[Math.abs(k) - 1][3]} ${k > 0 ? 'above' : 'below'}, ${p} : ${q}` : '';
+    const h = black ? bh : wh;
+    let g = `<g class="key ${black ? 'b' : 'w'}${act ? ' active' : ''}${!inRange || off ? ' off' : ''}${center ? ' center' : ''}${click ? ' mk' : ''}" ${click ? `data-r="${r}" tabindex="0" role="button" aria-label="${act ? 'Remove' : 'Add'} ${name}, ${fmtHz(f)} Hz"` : ''}>`;
+    g += `<rect x="${x + 0.5}" y="${top}" width="${w - 1}" height="${h}" rx="3"/>`;
+    if (inRange) {
+      if (black) {
+        g += `<text class="mlab" x="${cx}" y="${top - 18}" text-anchor="middle">${ab}</text><text class="msub" x="${cx}" y="${top - 6}" text-anchor="middle">${p}:${q}</text>`;
+        g += `<text class="klet bl" x="${cx}" y="${top + bh - 8}" text-anchor="middle">${letterFor(k)}</text>`;
+      } else {
+        g += center ? `<text class="klab" x="${cx}" y="${top + wh - 38}" text-anchor="middle">1:1</text><text class="ksub" x="${cx}" y="${top + wh - 24}" text-anchor="middle">carrier</text>`
+          : `<text class="klab" x="${cx}" y="${top + wh - 38}" text-anchor="middle">${ab}</text><text class="ksub" x="${cx}" y="${top + wh - 24}" text-anchor="middle">${p}:${q}</text>`;
+        g += `<text class="klet" x="${cx}" y="${top + wh - 7}" text-anchor="middle">${letterFor(k)}</text>`;
+      }
+    }
+    if (click) g += `<title>${name} · ${fmtHz(f)} Hz${act ? ' · tap to remove' : ''}</title>`;
+    return g + '</g>';
+  };
+  keys.filter(kk => !kk.black).forEach(kk => out.push(draw(kk)));
+  keys.filter(kk => kk.black).forEach(kk => out.push(draw(kk)));
+  // overtone and undertone keyboards: each harmonic dropped on its nearest key across four octaves
+  const series = (ty, under) => {
+    const sk = keyLayout(under ? -48 : 0, under ? 0 : 48, 580, 10), w2 = 60, b2 = 38, byK = new Map(sk.map(kk => [kk.k, kk]));
+    sk.filter(kk => !kk.black).forEach(kk => out.push(`<rect class="sw" x="${kk.x + 0.5}" y="${ty}" width="${kk.w - 1}" height="${w2}" rx="2"/>`));
+    sk.filter(kk => kk.black).forEach(kk => out.push(`<rect class="sb" x="${kk.x + 0.5}" y="${ty}" width="${kk.w - 1}" height="${b2}" rx="1.5"/>`));
+    sk.filter(kk => !kk.black && pcOf(kk.k) === 0).forEach(kk => out.push(kk.k === 0
+      ? `<text class="msub warn" x="${under ? kk.x + kk.w : kk.x}" y="${ty + w2 + 12}" text-anchor="${under ? 'end' : 'start'}">${letterFor(0, true)} · carrier</text>`
+      : `<text class="msub" x="${kk.cx}" y="${ty + w2 + 12}" text-anchor="middle">${letterFor(kk.k, true)}</text>`));
+    let prevK = null, lvl = 0;
+    for (let n = 2; n <= 16; n++) {
+      const c = cents(n), k0 = Math.round(c / 100), k = under ? -k0 : k0, dev = Math.round((c - 100 * k0) * (under ? -1 : 1));
+      const kk = byK.get(k); if (!kk) continue;
+      lvl = prevK !== null && Math.abs(k - prevK) <= 2 ? (lvl + 1) % 3 : 0; prevK = k;
+      const r = under ? 1 / n : n, lab = under ? `1/${n}` : `${n}`;
+      out.push(`<text class="mlab" x="${kk.cx}" y="${ty - 6 - lvl * 11}" text-anchor="middle">${lab}</text>`);
+      out.push(mk(kk.cx, ty + (kk.black ? b2 - 9 : w2 - 11), r, `${under ? 'Subharmonic' : 'Harmonic'} ${lab}, nearest key ${letterFor(k, true)} ${dev > 0 ? '+' : dev < 0 ? '−' : ''}${Math.abs(dev)}¢`, { size: 5.5, warn: Math.abs(dev) >= 15 }));
+    }
+  };
+  out.push(`<text class="mhead" x="10" y="192">Overtones on the keyboard · carrier × 2 … 16, four octaves up</text>`);
+  series(240, false);
+  out.push(`<text class="mhead" x="10" y="338">Undertones on the keyboard · carrier ÷ 2 … 16, four octaves down</text>`);
+  series(386, true);
+  return `<svg viewBox="0 0 600 464" role="group" aria-label="Interval keyboard with overtones and undertones">${out.join('')}</svg>`;
+}
+function wheelSvg() {
+  // top half = higher than the carrier, bottom half = lower; left to right = farther from the carrier
+  const out = [], C = S.carrier, cx = 300, cy = 258;
+  const pt = (deg, r, down) => [cx + r * Math.cos(deg * Math.PI / 180), cy + (down ? 1 : -1) * r * Math.sin(deg * Math.PI / 180)];
+  const ang = (i, n) => 180 - (i + 1) * 180 / (n + 1);
+  out.push(`<line class="mrule" x1="40" x2="560" y1="${cy}" y2="${cy}"/>`);
+  out.push(`<text class="msub" x="44" y="${cy - 6}">closer</text><text class="msub" x="556" y="${cy - 6}" text-anchor="end">farther →</text>`);
+  [[false, 'overtones (carrier × n)'], [true, 'undertones (carrier ÷ n)']].forEach(([down, rim]) => {
+    out.push(`<path class="mguide" d="M ${cx - 172} ${cy} A 172 172 0 0 ${down ? 0 : 1} ${cx + 172} ${cy}"/>`);
+    out.push(`<path class="mguide dashed" d="M ${cx - 230} ${cy} A 230 230 0 0 ${down ? 0 : 1} ${cx + 230} ${cy}"/>`);
+    out.push(`<text class="mhead" x="${cx}" y="${cy + (down ? 62 : -66)}" text-anchor="middle">${down ? '↓ Lower' : '↑ Higher'}</text>`);
+    out.push(`<text class="msub" x="${cx}" y="${cy + (down ? 76 : -52)}" text-anchor="middle">intervals ${down ? 'below' : 'above'} the carrier</text>`);
+    out.push(`<text class="msub" x="8" y="${down ? 510 : 12}">Outer arc: ${rim}</text>`);
+    // the twelve intervals, smallest at the left
+    IV.forEach(([p, q, ab, name], i) => {
+      const [a, b] = down ? [q, p] : [p, q], deg = ang(i, 12), [x, y] = pt(deg, 172, down), [lx, ly] = pt(deg, 136, down);
+      out.push(mk(x, y, a / b, `${name[0].toUpperCase() + name.slice(1)} ${down ? 'below' : 'above'}, ${a} : ${b}`,
+        { size: 19, inner: `<text class="wlab" x="${x}" y="${y - 1}" text-anchor="middle">${ab}</text><text class="wsub" x="${x}" y="${y + 10}" text-anchor="middle">${a}:${b}</text>` }));
+      out.push(`<text class="msub" x="${lx}" y="${ly + 3}" text-anchor="middle">${letterFor(down ? -(i + 1) : i + 1)}</text>`);
+    });
+    // the harmonic or subharmonic series on the outer rim
+    for (let n = 2; n <= 16; n++) {
+      const deg = ang(n - 2, 15), [x, y] = pt(deg, 230, down), [lx, ly] = pt(deg, 247, down);
+      const c = cents(n), dev = Math.round(c - 100 * Math.round(c / 100));
+      out.push(mk(x, y, down ? 1 / n : n, `${down ? 'Subharmonic 1/' : 'Harmonic '}${n} (${dev > 0 ? '+' : dev < 0 ? '−' : ''}${Math.abs(dev)}¢ from the nearest piano interval)`, { size: 7, warn: Math.abs(dev) >= 15 }));
+      out.push(`<text class="mlab" x="${lx}" y="${ly + 4}" text-anchor="middle">${down ? '÷' : '×'}${n}</text>`);
+    }
+  });
+  out.push(`<circle class="wcenter" cx="${cx}" cy="${cy}" r="34"/><text class="wlab" x="${cx}" y="${cy - 6}" text-anchor="middle">1:1</text><text class="wsub" x="${cx}" y="${cy + 6}" text-anchor="middle">${fmtHz(C)} Hz</text><text class="wsub" x="${cx}" y="${cy + 17}" text-anchor="middle">${letterFor(0, true)}</text>`);
+  return `<svg viewBox="0 0 600 516" role="group" aria-label="Interval wheel: intervals above on the top half, below on the bottom half">${out.join('')}</svg>`;
+}
+const MAP_HINTS = {
+  map: 'Cents under each overtone show how far that harmonic is from the nearest piano interval above the carrier. Red ones, like the 7th (−31¢) and 11th (−49¢), have no close piano match.',
+  keys: 'Each key is one interval from the carrier, labeled with its pure ratio. The lower keyboards drop every overtone and undertone on its nearest key; red dots sit far (15¢ or more) from that key. Hover or long-press a dot for its exact offset.',
+  wheel: 'Everything on the top half is higher than your carrier and everything on the bottom half is lower. In each half the inner arc holds the twelve intervals within one octave (smallest at the left) and the outer arc holds the overtones (×2 … ×16) or undertones (÷2 … ÷16). Red rim dots are far from any piano interval.'
+};
+function renderMap() {
+  const v = S.mapView;
+  document.querySelectorAll('#mapView button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v));
+  $('centerOctField').hidden = S.keyCenter === 'carrier';
+  $('centerOct').value = String(S.centerOct);
+  const nt = noteOf(S.carrier);
+  const opt = $('keyCenter').querySelector('option[value="carrier"]'); if (opt) opt.textContent = `Carrier's real note (${nt.name})`;
+  $('keyCenter').value = String(S.keyCenter);
+  $('imap').innerHTML = (v === 'keys' ? keysSvg() : v === 'wheel' ? wheelSvg() : mapSvg())
+    + `<p class="hint">${MAP_HINTS[v]} Tones above ${TONE_MAX} Hz or below ${TONE_MIN} Hz are greyed out.</p>`;
+  $('staff').innerHTML = staffSvg();
+}
+
+/* grand staff: the carrier plus each extra tone, spelled by interval from the center note */
+const DEG = [0, 1, 1, 2, 2, 3, 3, 4, 5, 5, 6, 6];          // staff steps for 0–11 semitones (the tritone is written as a raised 4th)
+const ABBR = ['P1', 'm2', 'M2', 'm3', 'M3', 'P4', 'TT', 'P5', 'm6', 'M6', 'm7', 'M7'];
+const NAT = [0, 2, 4, 5, 7, 9, 11], LETTERS = 'CDEFGAB';
+const centerMidi = () => S.keyCenter === 'carrier' ? noteOf(S.carrier).midi : 12 * (S.centerOct + 1) + centerPc();
+function staffNote(f) {
+  const c = cents(f / S.carrier), k = Math.round(c / 100), dev = Math.round(c - 100 * k);
+  const m0 = centerMidi(), L0 = LETTERS.indexOf(NOTE[pcOf(m0)][0]), O0 = Math.floor(m0 / 12) - 1;
+  const d = L0 + 7 * O0 + DEG[pcOf(k)] + 7 * Math.floor(k / 12), letter = ((d % 7) + 7) % 7, oct = Math.floor(d / 7);
+  const acc = m0 + k - (12 * (oct + 1) + NAT[letter]);
+  const a = Math.abs(k), o = Math.floor(a / 12), ov = n => n === 1 ? '8ve' : `${n}·8ve`;
+  const iv = k === 0 ? 'unison' : (a % 12 ? ABBR[a % 12] + (o ? '+' + ov(o) : '') : ov(a / 12)) + (k > 0 ? '↑' : '↓');
+  return { d, acc, dev, iv, name: LETTERS[letter] + (['𝄫', '♭', '', '♯', '𝄪'][acc + 2] || '') + oct };
+}
+function staffSvg() {
+  const items = [{ f: S.carrier, carrier: true, sub: '1:1 carrier' }];
+  S.layers.filter(l => l.on).forEach(l => {
+    const f = layerHz(l), r = ratioOf(f, S.carrier);
+    items.push({ f, sub: r ? `${r.p}:${r.q}` : `${(f / S.carrier).toFixed(3)}:1` });
+  });
+  const yOf = d => 120 - (d - 28) * 5, out = [];
+  for (let i = 0; i < 5; i++) out.push(`<line class="st" x1="16" x2="588" y1="${70 + i * 10}" y2="${70 + i * 10}"/><line class="st" x1="16" x2="588" y1="${130 + i * 10}" y2="${130 + i * 10}"/>`);
+  out.push(`<line class="inkline" x1="16" x2="16" y1="70" y2="170" stroke-width="1.5"/><line class="inkline" x1="588" x2="588" y1="70" y2="170" stroke-width="1.5"/>`);
+  out.push(`<text class="clef" x="20" y="111" font-size="46">𝄞</text><text class="clef" x="22" y="153" font-size="30">𝄢</text>`);
+  const x0 = 96, gap = Math.min(78, 470 / Math.max(items.length, 1));
+  items.forEach((it, i) => {
+    const n = staffNote(it.f), x = x0 + gap * (i + 0.5);
+    let d = n.d, shift = 0;
+    while (d > 44) { d -= 7; shift++; }
+    while (d < 14) { d += 7; shift--; }
+    const y = yOf(d);
+    // ledger lines: middle C between the staves, and above or below the outer lines
+    const led = [];
+    if (d === 28) led.push(28);
+    for (let l = 40; l <= d; l += 2) led.push(l);
+    for (let l = 16; l >= d; l -= 2) led.push(l);
+    led.forEach(l => out.push(`<line class="inkline" x1="${x - 11}" x2="${x + 11}" y1="${yOf(l)}" y2="${yOf(l)}" stroke-width="1.2"/>`));
+    out.push(`<ellipse class="snote${it.carrier ? ' car' : ''}" cx="${x}" cy="${y}" rx="7" ry="5" transform="rotate(-18 ${x} ${y})"/>`);
+    if (n.acc) out.push(`<text class="sacc" x="${x - 12}" y="${y + 5}" text-anchor="end">${['𝄫', '♭', '', '♯', '𝄪'][n.acc + 2]}</text>`);
+    if (shift) out.push(`<text class="msub" x="${x}" y="${shift > 0 ? y - 12 : y + 18}" text-anchor="middle">${Math.abs(shift) === 1 ? '8' : '15'}${shift > 0 ? 'va' : 'vb'}</text>`);
+    if (n.dev) out.push(`<text class="msub${Math.abs(n.dev) >= 15 ? ' warn' : ''}" x="${x + 10}" y="${y - 6}">${n.dev > 0 ? '+' : '−'}${Math.abs(n.dev)}</text>`);
+    out.push(`<text class="mlab${it.carrier ? ' l-fill' : ''}" x="${x}" y="${206}" text-anchor="middle">${n.name}</text>`);
+    out.push(`<text class="msub" x="${x}" y="${219}" text-anchor="middle">${it.carrier ? 'carrier' : n.iv}</text>`);
+    out.push(`<text class="msub" x="${x}" y="${231}" text-anchor="middle">${it.carrier ? fmtHz(it.f) + ' Hz' : it.sub}</text>`);
+  });
+  if (items.length === 1) out.push(`<text class="msub" x="330" y="124" text-anchor="middle">Add an extra tone above to see it here</text>`);
+  return `<svg viewBox="0 0 600 240" role="img" aria-label="Grand staff showing the carrier and extra tones">${out.join('')}</svg>`;
+}
+function mapSvg() {
+  const out = [], C = S.carrier;
+  // row 1: intervals on a cents ruler
+  const xa = c => 300 + c / 1200 * 262;
+  out.push(`<text class="mhead" x="10" y="11">Intervals · one octave below and above, as pure ratios</text>`);
+  out.push(`<text class="msub" x="38" y="98">← below the carrier</text><text class="msub" x="562" y="98" text-anchor="end">above the carrier →</text>`);
+  out.push(`<line class="mrule" x1="${xa(-1200)}" x2="${xa(1200)}" y1="52" y2="52"/>`);
+  for (let k = -12; k <= 12; k++) out.push(`<line class="mtick" x1="${xa(k * 100)}" x2="${xa(k * 100)}" y1="47" y2="57"/>`);
+  out.push(mk(xa(0), 52, 1, 'Unison 1 : 1 (the carrier)', { size: 9 }), `<text class="mlab" x="${xa(0)}" y="26" text-anchor="middle">1:1</text>`);
+  IV.forEach(([p, q, ab, name], i) => {
+    [[p, q, 1], [q, p, -1]].forEach(([a, b, dir]) => {
+      const x = xa(cents(a / b)), alt = i % 2 ? 11 : 0;
+      out.push(mk(x, 52, a / b, `${name[0].toUpperCase() + name.slice(1)} ${dir > 0 ? 'above' : 'below'}, ${a} : ${b}`));
+      out.push(`<text class="mlab" x="${x}" y="${38 - alt}" text-anchor="middle">${ab}</text>`);
+      out.push(`<text class="msub" x="${x}" y="${74 + alt}" text-anchor="middle">${a}:${b}</text>`);
+    });
+  });
+  // row 2: overtones, evenly spaced like rungs of a ladder
+  out.push(`<text class="mhead" x="10" y="124">Overtones · carrier × 2, 3, 4 … (the harmonic series)</text>`);
+  const xo = n => 40 + (n - 2) * (520 / 14);
+  out.push(`<line class="mrule" x1="${xo(2)}" x2="${xo(16)}" y1="158" y2="158"/>`);
+  for (let n = 2; n <= 16; n++) {
+    const f = C * n, nt = noteOf(f), c = cents(n), dev = Math.round(c - 100 * Math.round(c / 100));
+    out.push(`<text class="mlab" x="${xo(n)}" y="142" text-anchor="middle">${n}</text>`);
+    out.push(mk(xo(n), 158, n, `Harmonic ${n}, ${n} : 1`, { warn: Math.abs(dev) >= 15 }));
+    out.push(`<text class="msub" x="${xo(n)}" y="180" text-anchor="middle">${nt.name}</text><text class="msub${Math.abs(dev) >= 15 ? ' warn' : ''}" x="${xo(n)}" y="191" text-anchor="middle">${dev > 0 ? '+' : dev < 0 ? '−' : ''}${Math.abs(dev)}¢</text>`);
+  }
+  // row 3: undertones
+  out.push(`<text class="mhead" x="10" y="218">Undertones · carrier ÷ 2, 3, 4 … (the subharmonic series)</text>`);
+  const xu = n => 560 - (n - 2) * (520 / 14);
+  out.push(`<line class="mrule" x1="${xu(16)}" x2="${xu(2)}" y1="252" y2="252"/>`);
+  for (let n = 2; n <= 16; n++) {
+    const f = C / n, nt = noteOf(f);
+    out.push(`<text class="mlab" x="${xu(n)}" y="236" text-anchor="middle">1/${n}</text>`);
+    out.push(mk(xu(n), 252, 1 / n, `Subharmonic 1/${n}, 1 : ${n}`));
+    out.push(`<text class="msub" x="${xu(n)}" y="274" text-anchor="middle">${f >= TONE_MIN ? nt.name : '—'}</text>`);
+  }
+  return `<svg viewBox="0 0 600 284" role="group" aria-label="Interval and harmonic map">${out.join('')}</svg>`;
+}
+function toggleRatio(r) {
+  const l = layerFor(r);
+  if (l) S.layers = S.layers.filter(x => x !== l);
+  else S.layers.push({ id: nextId++, hz: S.carrier * r, vol: 30, on: true, pulse: 0, follow: true, ratio: r, wave: 'sine' });
+  renderLayers(); renderNotes(); renderRhythm(); syncLayers();
+}
+$('mapView').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.mapView = b.dataset.v; renderMap(); } });
+$('keyCenter').addEventListener('change', e => { S.keyCenter = e.target.value === 'carrier' ? 'carrier' : +e.target.value; renderMap(); });
+$('centerOct').addEventListener('change', e => { S.centerOct = +e.target.value; renderMap(); });
+$('imap').addEventListener('click', e => { const g = e.target.closest('.mk'); if (g && !g.classList.contains('off')) toggleRatio(+g.dataset.r); });
+$('imap').addEventListener('keydown', e => {
+  const g = e.target.closest('.mk'); if (!g || (e.key !== 'Enter' && e.key !== ' ')) return;
+  e.preventDefault(); const r = +g.dataset.r; toggleRatio(r);
+  document.querySelector(`#imap .mk[data-r="${r}"]`)?.focus();
 });
 
 /* ---------- scope ---------- */
@@ -1030,6 +1427,9 @@ function draw(now) {
     if (i !== litNote) {
       document.querySelectorAll('#notation .nh.on').forEach(n => n.classList.remove('on'));
       if (i >= 0) document.querySelector(`#notation .nh[data-i="${i}"]`)?.classList.add('on');
+      document.querySelectorAll('#notation .lh.on').forEach(n => n.classList.remove('on'));
+      if (i >= 0) document.querySelectorAll(`#notation .lh[data-i="${i}"]`).forEach(n => n.classList.add('on'));
+      document.querySelectorAll('#notation .lh-steady').forEach(n => n.classList.toggle('on', i >= 0));
       litNote = i;
     }
     const b = i >= 0 ? Math.floor(i / perBeat) : -1, arrow = $('beatArrow');
