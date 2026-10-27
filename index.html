@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Brainwave Tone Studio</title>
+<meta name="description" content="A tone and binaural-beat generator with rhythm notation, piano notes, a breathing pacer and cited sources. Made by Ivan.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a "console" — live readout + scope on the left, controls on the right; music, reference and pacer panels below. */
+:root {
+  --bg: #eaeef2; --surface: #f7f9fb; --ink: #16202b; --muted: #586677; --line: #d0d8e1;
+  --left: #2a6d84; --right: #b0602f; --soft: #dbe4ec; --key: #ffffff; --keyblack: #1c2530;
+  --display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --body: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e141b; --surface: #151e28; --ink: #e4eaf0; --muted: #91a0b0; --line: #26323f;
+  --left: #6bb7ce; --right: #e39a69; --soft: #1d2834; --key: #d9e0e7; --keyblack: #0a0f14; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e141b; --surface: #151e28; --ink: #e4eaf0; --muted: #91a0b0; --line: #26323f;
+  --left: #6bb7ce; --right: #e39a69; --soft: #1d2834; --key: #d9e0e7; --keyblack: #0a0f14; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 56px; }
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 28px }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; margin: 0; text-wrap: balance; letter-spacing: .005em }
+h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); line-height: 1.05 }
+h2 { font-size: 1.65rem; line-height: 1.15 }
+h3 { font-size: 1.25rem; line-height: 1.2 }
+p { margin: 0 }
+a { color: var(--left) }
+.lede { color: var(--muted); max-width: 62ch; margin-top: 8px }
+.label { font-size: .72rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600 }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
+button, select { font: inherit; color: inherit; cursor: pointer }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--left); outline-offset: 2px }
+.hint { font-size: .86rem; color: var(--muted) }
+.l-c { color: var(--left) } .r-c { color: var(--right) }
+
+.console, .two { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; align-items: start }
+@media (max-width: 820px) { .console, .two { grid-template-columns: minmax(0, 1fr) } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; gap: 16px; min-width: 0 }
+
+.readout { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap }
+.big { font-family: var(--display); font-size: clamp(3.6rem, 10vw, 5.4rem); line-height: .9 }
+.unit { font-family: var(--mono); color: var(--muted) }
+.band { font-family: var(--display); font-style: italic; font-size: 1.7rem; color: var(--left) }
+.pair { font-family: var(--mono); font-size: .9rem; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap }
+.pair b { font-weight: 500 }
+.pair .l b { color: var(--left) } .pair .r b { color: var(--right) }
+canvas { width: 100%; height: 150px; display: block; border-radius: 10px; background: var(--soft) }
+
+.transport { display: flex; gap: 12px; align-items: center; flex-wrap: wrap }
+.play { background: var(--ink); color: var(--bg); border: 0; border-radius: 999px; padding: 12px 28px; font-weight: 600; font-size: 1rem; min-width: 9.5rem }
+.play[aria-pressed="true"] { background: var(--right); color: #fff }
+.status { color: var(--muted); font-size: .9rem }
+
+.seg { display: grid; grid-auto-columns: 1fr; grid-auto-flow: column; border: 1px solid var(--line); border-radius: 10px; overflow: hidden }
+.seg button { background: transparent; border: 0; padding: 9px 4px; font-size: .86rem; border-left: 1px solid var(--line) }
+.seg button:first-child { border-left: 0 }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg) }
+@media (max-width: 420px) { #modes { grid-auto-flow: row; grid-template-columns: repeat(2, 1fr) } #modes button:nth-child(3) { border-left: 0 } #modes button:nth-child(n+3) { border-top: 1px solid var(--line) } }
+
+.field { display: grid; gap: 6px }
+.field-head { display: flex; justify-content: space-between; align-items: center; gap: 8px }
+input[type=number] { width: 6.5rem; font: 500 .95rem var(--mono); background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; text-align: right }
+select { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; font-size: .86rem }
+input[type=range] { width: 100%; accent-color: var(--left) }
+.field.r input[type=range] { accent-color: var(--right) }
+input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--left) }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px }
+.chip { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: .84rem }
+.chip:hover { border-color: var(--left) }
+.chip small { font-family: var(--mono); color: var(--muted); margin-left: 4px }
+.ghost { background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; font-size: .86rem }
+.ghost:hover { border-color: var(--ink) }
+.ghost[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink) }
+
+/* music panel */
+.notation svg, .keys svg { width: 100%; height: auto; display: block }
+.notation { overflow-x: auto }
+.notation svg { min-width: 420px }
+.st { stroke: var(--muted); stroke-width: 1 }
+.ink { fill: var(--ink) }
+.inkline { stroke: var(--ink) }
+.nh { fill: var(--ink); transition: fill .08s }
+.nh.hollow { fill: var(--surface); stroke: var(--ink); stroke-width: 1.7 }
+.nh.on { fill: var(--right) }
+.nh.hollow.on { stroke: var(--right); fill: var(--right) }
+.svgtext { fill: var(--ink); font-family: var(--display) }
+.beat-arrow { fill: var(--right); transition: transform .12s ease-out, opacity .2s }
+.beat-arrow text { font: 600 13px var(--mono) }
+.beat-arrow.idle { opacity: .35 }
+.svgmono { fill: var(--muted); font-family: var(--mono); font-size: 12px }
+.facts { display: grid; gap: 8px; font-size: .92rem }
+.facts .row { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: 10px }
+@media (max-width: 420px) { .facts .row { grid-template-columns: minmax(0, 1fr); gap: 0 } }
+.facts dt { color: var(--muted) }
+.facts dd { margin: 0 }
+.tune-ctl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px }
+.tune-ctl select { width: 100% }
+table.fit { min-width: 340px; font-size: .86rem }
+table.fit td, table.fit th { padding: 6px 8px }
+table.fit tbody tr { cursor: pointer }
+table.fit tbody tr:hover td { background: var(--soft) }
+table.fit tr.current td { font-weight: 600; color: var(--ink) }
+table.fit tr.best td:first-child::after { content: " ★ best"; color: var(--right); font-family: var(--mono); font-size: .78rem }
+.wkey { fill: var(--key); stroke: var(--line) }
+.bkey { fill: var(--keyblack) }
+.keylabel { fill: #6b7785; font: 9px var(--mono) }
+
+.bands { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px }
+.bandcard { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 4px; align-content: start }
+.bandcard:hover { border-color: var(--left) }
+.bandcard[aria-pressed="true"] { border-color: var(--left); box-shadow: inset 0 0 0 1px var(--left) }
+.bandcard .name { font-family: var(--display); font-size: 1.45rem; line-height: 1 }
+.bandcard .range { font-family: var(--mono); font-size: .82rem; color: var(--left) }
+.bandcard .use { font-size: .82rem; color: var(--muted) }
+
+.tablewrap { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; min-width: 520px }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line) }
+th { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600 }
+td.mono { white-space: nowrap }
+
+/* extra tones */
+.layers { display: grid; gap: 12px }
+.layer { border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 10px; background: var(--bg) }
+.layer-top { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 12px; align-items: center }
+.layer-top .hz { display: flex; align-items: center; gap: 6px }
+.layer-opts { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; font-size: .86rem }
+.layer-opts label { display: inline-flex; gap: 6px; align-items: center }
+.layer-info { font-size: .86rem; color: var(--muted) }
+.layer-info b { color: var(--ink); font-weight: 500 }
+.x { border: 0; background: transparent; color: var(--muted); font-size: 1.2rem; line-height: 1; padding: 4px 6px }
+
+/* breathing pacer */
+#pacerPanel { position: relative }
+.pacer-stage { display: grid; place-items: center }
+.pacer-svg { width: min(320px, 100%); height: auto; display: block }
+.pacer-svg .track { fill: none; stroke: var(--line); stroke-width: 10 }
+.pacer-svg .seg-in { stroke: var(--left) } .pacer-svg .seg-out { stroke: var(--right) } .pacer-svg .seg-hold { stroke: var(--muted) }
+.pacer-svg .seg { fill: none; stroke-width: 10; stroke-linecap: round; opacity: .85 }
+.pacer-svg .inner { fill: var(--left); opacity: .18 }
+.pacer-svg .dot { fill: var(--ink); stroke: var(--surface); stroke-width: 3 }
+.pacer-svg .word { fill: var(--ink); font-family: var(--display); font-size: 30px; text-anchor: middle }
+.pacer-svg .count { fill: var(--muted); font-family: var(--mono); font-size: 15px; text-anchor: middle }
+.phase-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px }
+.phase-grid input[type=number] { width: 100% }
+@media (max-width: 420px) { .phase-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+.pacer-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center }
+.pacer-row .seg { min-width: 12rem }
+.pacer-settings { display: grid; gap: 14px }
+.exit-fs { display: none }
+#pacerPanel:fullscreen #fsBtn, #pacerPanel.focus #fsBtn { display: none }
+#pacerPanel:fullscreen, #pacerPanel.focus {
+  position: fixed; inset: 0; z-index: 50; border: 0; border-radius: 0; background: var(--bg); overflow: auto;
+  align-content: center; justify-items: center;
+  padding: calc(24px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px)) }
+#pacerPanel:fullscreen .pacer-intro, #pacerPanel.focus .pacer-intro, #pacerPanel:fullscreen .pacer-settings, #pacerPanel.focus .pacer-settings { display: none }
+#pacerPanel:fullscreen .pacer-svg, #pacerPanel.focus .pacer-svg { width: min(78vmin, 600px) }
+#pacerPanel:fullscreen .exit-fs, #pacerPanel.focus .exit-fs { display: inline-block }
+
+.divider { margin-top: 28px; padding-top: 22px; border-top: 2px solid var(--muted); display: grid; gap: 6px }
+.divider .label { color: var(--left) }
+.divider p { color: var(--muted); font-size: .94rem; max-width: 62ch }
+.prose { display: grid; gap: 12px; max-width: 72ch }
+.prose p, .prose li { color: var(--muted); font-size: .94rem }
+.prose strong { color: var(--ink); font-weight: 600 }
+.prose ul { margin: 0; padding-left: 1.2rem; display: grid; gap: 6px }
+.timeline { display: grid; gap: 10px }
+.timeline .ev { display: grid; grid-template-columns: 4rem minmax(0, 1fr); gap: 12px }
+.timeline .yr { font-family: var(--mono); color: var(--left); font-size: .9rem }
+.refs { margin: 0; padding-left: 1.6rem; display: grid; gap: 8px; font-size: .88rem; color: var(--muted); max-width: 80ch }
+.refs a { word-break: break-word }
+sup a { text-decoration: none; font-family: var(--mono); font-size: .75em; padding: 0 2px }
+.refs li { scroll-margin-top: 30vh; border-radius: 6px; transition: background-color .6s }
+.refs li.flash { background: var(--soft); color: var(--ink) }
+.back { margin-left: 8px; border: 0; background: transparent; color: var(--left); font-size: .85rem; padding: 0; text-decoration: underline }
+@media (prefers-reduced-motion: reduce) { .nh, .beat-arrow { transition: none } }
+
+/* credit footer (published version) */
+.credit { border-top: 1px solid var(--line); padding-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between; font-size: .86rem; color: var(--muted) }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="label">Tone generator · binaural · isochronic</div>
+    <h1>Brainwave Tone Studio</h1>
+    <p class="lede">Pick a carrier tone in hertz, then a beat frequency. The beat is the difference between the two ears (right − left), and that difference is what lands in the delta, theta, alpha, beta or gamma range.</p>
+  </header>
+
+  <section class="console">
+    <div class="panel">
+      <div>
+        <div class="label" id="readoutLabel">Beat frequency</div>
+        <div class="readout"><span class="big mono" id="bigNum">10.0</span><span class="unit">Hz</span><span class="band" id="bandName">alpha</span></div>
+        <div class="pair" id="pair"></div>
+      </div>
+      <canvas id="scope" aria-label="Shape of the sound over a few beats"></canvas>
+      <div class="transport">
+        <button class="play" id="play" aria-pressed="false">Start tone</button>
+        <span class="status" id="status">Stopped</span>
+      </div>
+      <p class="hint" id="modeHint"></p>
+    </div>
+
+    <div class="panel">
+      <div class="field">
+        <span class="label">Method</span>
+        <div class="seg" id="modes">
+          <button data-mode="binaural" aria-pressed="true">Binaural</button>
+          <button data-mode="isochronic" aria-pressed="false">Isochronic</button>
+          <button data-mode="monaural" aria-pressed="false">Monaural</button>
+          <button data-mode="pure" aria-pressed="false">Pure tone</button>
+        </div>
+      </div>
+      <div class="field">
+        <div class="field-head"><label class="label" for="carrierNum">Carrier tone (left ear)</label>
+          <span><input type="number" id="carrierNum" min="20" max="1500" step="0.1"> <span class="unit">Hz</span></span></div>
+        <input type="range" id="carrier" min="20" max="1000" step="0.5" aria-label="Carrier tone">
+      </div>
+      <div class="field r" id="beatField">
+        <div class="field-head"><label class="label" for="beatNum">Beat frequency</label>
+          <span><input type="number" id="beatNum" min="0.5" max="45" step="0.1"> <span class="unit">Hz</span></span></div>
+        <input type="range" id="beat" min="0.5" max="45" step="0.1" aria-label="Beat frequency">
+      </div>
+      <div class="two" style="gap:14px">
+        <div class="field">
+          <div class="field-head"><label class="label" for="vol">Volume</label><span class="mono hint" id="volOut"></span></div>
+          <input type="range" id="vol" min="0" max="100" step="1">
+        </div>
+        <div class="field">
+          <div class="field-head"><label class="label" for="minutes">Timer</label><span><input type="number" id="minutes" min="0" max="180" step="1" style="width:4.5rem"> <span class="unit">min</span></span></div>
+          <span class="hint">0 = play until stopped. Fades out at the end.</span>
+        </div>
+      </div>
+      <div class="field">
+        <span class="label">Carrier presets</span>
+        <div class="chips" id="tonePresets"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="two">
+    <div class="panel">
+      <div>
+        <h2>The beat as rhythm</h2>
+        <p class="hint" style="margin-top:4px">At a tempo of ♩ = 60, one beat lasts one second, so the beat frequency in Hz is simply how many pulses fall in each beat. Change the tempo to see how the same pulse fits other subdivisions.</p>
+      </div>
+      <div class="pacer-row">
+        <label class="label" for="tempo">Tempo ♩ =</label>
+        <input type="number" id="tempo" min="20" max="300" step="1" style="width:5rem">
+        <span class="hint">beats per minute</span>
+        <span class="chips" id="clockTempos">
+          <button class="ghost" data-tempo="60">♩ = 60 · 1 beat per second</button>
+          <button class="ghost" data-tempo="120">♩ = 120 · 2 beats per second</button>
+        </span>
+      </div>
+      <div class="notation" id="notation"></div>
+      <div class="facts" id="rhythmFacts"></div>
+      <div class="field">
+        <span class="label" id="exactLabel">Make it line up exactly</span>
+        <div class="chips" id="exactChips"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div>
+        <h2>Closest piano notes</h2>
+        <p class="hint" style="margin-top:4px">Cents show how far off the key you are (100¢ = one semitone). Change the reference pitch or temperament to see which tuning your tones fit best.</p>
+      </div>
+      <div class="tune-ctl">
+        <div class="field">
+          <label class="label" for="refSel">Reference pitch A4</label>
+          <select id="refSel"></select>
+        </div>
+        <div class="field">
+          <label class="label" for="refNum">Custom A4</label>
+          <span><input type="number" id="refNum" min="380" max="480" step="0.1" style="width:5.5rem"> <span class="unit">Hz</span></span>
+        </div>
+        <div class="field">
+          <label class="label" for="tempSel">Temperament</label>
+          <select id="tempSel"></select>
+        </div>
+        <div class="field" id="tonicField">
+          <label class="label" for="tonicSel">Key (tonic)</label>
+          <select id="tonicSel"></select>
+        </div>
+      </div>
+      <p class="hint" id="tuneDesc"></p>
+      <div class="keys" id="keys"></div>
+      <div class="facts" id="noteFacts"></div>
+      <div class="field">
+        <span class="label">Which reference fits best</span>
+        <p class="hint">Distance from the nearest key at each A4, in <span id="fitTemp"></span>. The closest row is marked; tap a row to switch to it.</p>
+        <div class="tablewrap"><table class="fit"><thead id="fitHead"></thead><tbody id="fitRows"></tbody></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:grid; gap:14px">
+    <h2>Brainwave bands</h2>
+    <p class="lede" style="margin:0">Tap a band to set the beat to its usual middle value. The descriptions are the mental states each band shows up in on an EEG. Where the names and links came from is explained further down.</p>
+    <div class="bands" id="bands"></div>
+  </section>
+
+  <section class="panel">
+    <div>
+      <h2>Left/right pairs for each band</h2>
+      <p class="hint" style="margin-top:4px">Built on your current carrier of <span class="mono" id="tblCarrier"></span> Hz. Formula: <span class="mono">right = left + beat</span>. Keep the carrier under about 1000 Hz (100–400 Hz is typical) and the beat under about 30 Hz for binaural beats to be heard clearly.</p>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Band</th><th>Beat</th><th>Left ear</th><th>Right ear</th><th>Ratio R : L</th><th>At ♩ = <span id="tblTempo"></span></th></tr></thead>
+      <tbody id="ratioRows"></tbody>
+    </table></div>
+  </section>
+
+  <section class="panel">
+    <div class="two" style="align-items:end">
+      <div>
+        <h2>Extra tones</h2>
+        <p class="hint" style="margin-top:4px">Layer pure tones on top of the main sound. Each one shows its nearest piano key and how it relates to the carrier, and can pulse along with the beat.</p>
+      </div>
+      <div class="field">
+        <span class="label">Add a tone from the carrier's harmonic series</span>
+        <div class="chips" id="harmonicChips"></div>
+      </div>
+    </div>
+    <div class="layers" id="layers"></div>
+    <div><button class="ghost" id="addLayer">Add a custom tone</button></div>
+    <div class="prose">
+      <p><strong>How the ratios work.</strong> Any vibrating string or column of air sounds its base frequency plus whole-number multiples of it: 2×, 3×, 4×, 5× and so on. This is the harmonic series, and musical intervals come straight from it. Harmonics 1 → 2 make an octave (2 : 1), 2 → 3 a perfect fifth (3 : 2), 3 → 4 a perfect fourth (4 : 3), 4 → 5 a major third (5 : 4). Tones in simple ratios with the carrier blend smoothly. Tones that are slightly off a simple ratio create a slow wobble of their own.</p>
+      <p><strong>Pulse options.</strong> "Every 2nd beat" switches the tone on at half the beat rate, "every 3rd" at a third, and so on. Over a 6 Hz theta beat, a tone pulsing every 2nd beat gives 3 pulses a second, a 2-against-1 rhythm. Pulsed layers can drift slightly out of step with a binaural beat because the brain creates that beat, not the speaker.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="pacerPanel">
+    <div class="pacer-intro">
+      <h2>Breathing pacer</h2>
+      <p class="hint" style="margin-top:4px">Slow breathing near 6 breaths a minute is the best-studied way to raise vagal tone, measured as heart-rate variability.<sup><a href="#ref-lehrer">9</a></sup> A longer exhale than inhale also leans toward the parasympathetic side, because the heart slows a little on every exhale.</p>
+    </div>
+    <div class="pacer-stage"><svg class="pacer-svg" id="pacerSvg" viewBox="0 0 300 300" role="img" aria-label="Breathing guide"></svg></div>
+    <div class="pacer-row" style="justify-content:center">
+      <button class="play" id="pacerBtn" aria-pressed="false">Start pacer</button>
+      <button class="ghost" id="fsBtn">Full screen</button>
+      <button class="ghost exit-fs" id="exitFs">Exit full screen</button>
+      <span class="mono hint" id="pacerStats"></span>
+    </div>
+    <div class="pacer-settings">
+      <div class="phase-grid">
+        <div class="field"><label class="label l-c" for="ph0">Inhale s</label><input type="number" id="ph0" min="1" max="15" step="0.5"></div>
+        <div class="field"><label class="label" for="ph1">Hold s</label><input type="number" id="ph1" min="0" max="20" step="0.5"></div>
+        <div class="field"><label class="label r-c" for="ph2">Exhale s</label><input type="number" id="ph2" min="1" max="20" step="0.5"></div>
+        <div class="field"><label class="label" for="ph3">Hold s</label><input type="number" id="ph3" min="0" max="20" step="0.5"></div>
+      </div>
+      <div class="field">
+        <span class="label">Patterns</span>
+        <div class="chips" id="breathPresets"></div>
+      </div>
+      <div class="pacer-row">
+        <div class="seg" id="shapes">
+          <button data-shape="circle" aria-pressed="true">Circle</button>
+          <button data-shape="square" aria-pressed="false">Square</button>
+        </div>
+        <label class="hint" style="display:inline-flex; gap:8px; align-items:center"><input type="checkbox" id="cue"> Soft chime at each phase change</label>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider" role="separator" aria-label="End of the tools; background and sources follow">
+    <span class="label">Background &amp; sources</span>
+    <p>Everything above is the tool. Everything below explains where the bands, numbers and claims come from, with links to the research.</p>
+  </div>
+
+  <section class="prose">
+    <h2>Where the band names came from</h2>
+    <div class="timeline">
+      <div class="ev"><span class="yr">1924</span><p><strong>Hans Berger</strong>, a German psychiatrist, records the first human EEG and publishes it in 1929.<sup><a href="#ref-berger">1</a></sup> He sees a large, regular rhythm near 10 per second when people rest with eyes closed that disappears when they open their eyes or do mental arithmetic. He calls it <strong>alpha</strong>, and the smaller, faster waves that replace it <strong>beta</strong>. The letters simply mean first and second.</p></div>
+      <div class="ev"><span class="yr">1936</span><p><strong>W. Grey Walter</strong>, using EEG to locate brain tumours in Bristol, names the very slow waves under 4 Hz <strong>delta</strong>.<sup><a href="#ref-walter">2</a></sup></p></div>
+      <div class="ev"><span class="yr">1938</span><p><strong>Herbert Jasper and H. L. Andrews</strong> use <strong>gamma</strong> for activity faster than beta.<sup><a href="#ref-jasper">3</a></sup></p></div>
+      <div class="ev"><span class="yr">1944</span><p><strong>Walter and Dovey</strong> name the 4–7 Hz rhythm <strong>theta</strong>, the letter chosen for the thalamus, where they thought it came from.<sup><a href="#ref-walterdovey">4</a></sup></p></div>
+      <div class="ev"><span class="yr">1968</span><p>Sleep staging is standardised (Rechtschaffen and Kales, now the AASM manual).<sup><a href="#ref-aasm">5</a></sup> Deep N3 sleep is defined by delta waves, drowsy N1 by theta, and relaxed eyes-closed wakefulness by posterior alpha.</p></div>
+    </div>
+    <p><strong>So the links are observations.</strong> "Delta = deep sleep" means the sleeping brain produces delta waves. It does not by itself show that hearing a 2 Hz beat causes sleep. The step from one to the other is the <strong>entrainment hypothesis</strong>: that a rhythmic sound pulls brain rhythms toward its own rate. The brain does follow some rhythmic sounds, most clearly near 40 Hz. Whether binaural beats shift the EEG is unsettled. A 2023 systematic review found 5 of 14 studies supported it, 8 did not and 1 was mixed.<sup><a href="#ref-ingendoh">7</a></sup> Band edges also vary a little between textbooks (alpha 8–12 or 8–13 Hz).</p>
+
+    <h3>How each link was established</h3>
+    <ul>
+      <li><strong>Alpha → calm, eyes closed.</strong> Berger saw alpha appear when people relaxed with their eyes closed and disappear when they opened their eyes or did mental arithmetic ("alpha blocking"). Modern studies still use this test. Barry and colleagues recorded 28 adults resting with eyes closed and then open. Alpha fell when eyes opened, and people with lower alpha had higher skin conductance, a measure of arousal.<sup><a href="#ref-barry">16</a></sup> That inverse link between alpha and arousal is why alpha is called "relaxed wakefulness". Klimesch's review adds that alpha also rises and falls with memory tasks, so it is not only a relaxation signal.<sup><a href="#ref-klimesch">15</a></sup></li>
+      <li><strong>Theta → drowsiness and memory.</strong> Overnight sleep recordings showed theta taking over as alpha fades at sleep onset, which became stage N1.<sup><a href="#ref-aasm">5</a></sup> Theta also rises while people learn new information,<sup><a href="#ref-klimesch">15</a></sup> and in animals hippocampal theta tracks navigation and memory.<sup><a href="#ref-buzsaki">17</a></sup> The meditation link comes from EEG studies of meditators.</li>
+      <li><strong>Delta → deep sleep.</strong> Sleep EEG from the late 1930s onward showed large slow waves in the deepest, hardest-to-wake sleep. The AASM rules define N3 as 20% or more of a 30-second epoch filled with 0.5–2 Hz waves over 75 µV.<sup><a href="#ref-aasm">5</a></sup> In awake adults, delta mostly signals drowsiness or injury. Knyazev's review covers its links to homeostatic and motivational processes.<sup><a href="#ref-knyazev">18</a></sup></li>
+      <li><strong>Beta → alert, active thinking.</strong> Beta is the faster activity Berger saw replace alpha when eyes opened and people concentrated. It is strongest over the motor cortex and drops when you move. Engel and Fries argue it signals keeping the current motor or mental state going.<sup><a href="#ref-engel">19</a></sup></li>
+      <li><strong>Gamma → attention, and 40 Hz.</strong> In 1981 Galambos showed that clicks repeated about 40 times a second make the human brain produce a steady 40 Hz response. It disappears under surgical anesthesia.<sup><a href="#ref-galambos">20</a></sup> This "auditory steady-state response" is the clearest case of the brain actually following a sound's rhythm, and it underlies the 40 Hz Alzheimer's work.<sup><a href="#ref-iaccarino">11</a>,<a href="#ref-martorell">12</a></sup></li>
+    </ul>
+
+    <h3>Binaural beats</h3>
+    <p>Heinrich Dove described binaural beats in 1839. Gerald Oster's 1973 <em>Scientific American</em> article brought them into modern research,<sup><a href="#ref-oster">6</a></sup> and Robert Monroe's Hemi-Sync recordings made them popular in the 1970s. A 2019 meta-analysis of 22 studies found a medium effect on anxiety, memory, attention and pain (g = 0.45).<sup><a href="#ref-garcia">8</a></sup> The EEG evidence for why it works is much weaker, as above.</p>
+
+    <h3>Where the preset numbers come from</h3>
+    <ul>
+      <li><strong>40 Hz gamma.</strong> MIT studies flickered light and played sound at 40 Hz to mice that model Alzheimer's disease, and reduced amyloid and improved memory.<sup><a href="#ref-iaccarino">11</a>,<a href="#ref-martorell">12</a></sup> Human trials are ongoing.</li>
+      <li><strong>440 vs 432 Hz.</strong> A = 440 Hz is the international concert-pitch standard (agreed in 1939, ISO 16 since 1975). 432 Hz is a popular alternative tuning. No study has shown a health difference.</li>
+      <li><strong>Solfeggio tones (174–963 Hz).</strong> These come from 1970s–1990s writings (Joseph Puleo, then Leonard Horowitz) that derived them by numerology from Bible verse numbers. Medieval solfège named notes but had no fixed pitch in hertz. Claims such as "528 Hz repairs DNA" are unsupported.</li>
+      <li><strong>136.1 Hz Om.</strong> Hans Cousto's "cosmic octave" took the length of Earth's year and doubled its frequency 32 times to land in the audible range.</li>
+      <li><strong>7.83 Hz Schumann.</strong> This is the lowest electromagnetic resonance of the gap between Earth's surface and the ionosphere, predicted by Winfried Schumann in 1952 and measured in 1960.<sup><a href="#ref-schumann">13</a></sup> Its overlap with the theta/alpha border is a coincidence often used in marketing.</li>
+      <li><strong>Humming.</strong> Humming raises nasal nitric oxide about 15-fold.<sup><a href="#ref-weitzberg">14</a></sup> It also lengthens the exhale, which is likely most of its calming effect. That is why a low drone you can hum along with is a useful extra tone.</li>
+    </ul>
+  </section>
+
+  <section class="prose">
+    <h2>Before you use it</h2>
+    <p><strong>Binaural needs headphones.</strong> Each ear has to get its own tone. Through speakers the two mix in the air and become a monaural beat. Isochronic and monaural beats work on speakers.</p>
+    <p><strong>Keep it quiet and safe.</strong> Start low, since these tones can get loud in headphones. Don't listen while driving. People with seizure disorders should skip rhythmic pulsing sounds or check with their doctor first. Tones do not stimulate the vagus nerve directly. Slow breathing does the measurable work.<sup><a href="#ref-zaccaro">10</a></sup></p>
+    <p><strong>On iPhone</strong>, turn off silent mode or the browser plays nothing. Full screen on iPhone opens as a full-window view.</p>
+  </section>
+
+  <section class="prose">
+    <h2>Sources</h2>
+    <ol class="refs">
+      <li id="ref-berger">Berger H. Über das Elektrenkephalogramm des Menschen. <em>Archiv für Psychiatrie und Nervenkrankheiten</em>. 1929;87:527–570. <a target="_blank" rel="noopener" href="https://doi.org/10.1007/BF01797193">doi:10.1007/BF01797193</a></li>
+      <li id="ref-walter">Walter WG. The location of cerebral tumours by electro-encephalography. <em>Lancet</em>. 1936;228:305–308. <a target="_blank" rel="noopener" href="https://doi.org/10.1016/S0140-6736(01)05173-X">doi:10.1016/S0140-6736(01)05173-X</a></li>
+      <li id="ref-jasper">Jasper HH, Andrews HL. Electro-encephalography III: normal differentiation of occipital and precentral regions in man. <em>Archives of Neurology and Psychiatry</em>. 1938;39(1):96–115. <a target="_blank" rel="noopener" href="https://doi.org/10.1001/archneurpsyc.1938.02270010106010">doi:10.1001/archneurpsyc.1938.02270010106010</a></li>
+      <li id="ref-walterdovey">Walter WG, Dovey VJ. Electro-encephalography in cases of sub-cortical tumour. <em>Journal of Neurology, Neurosurgery and Psychiatry</em>. 1944;7(3–4):57–65. <a target="_blank" rel="noopener" href="https://doi.org/10.1136/jnnp.7.3-4.57">doi:10.1136/jnnp.7.3-4.57</a></li>
+      <li id="ref-aasm">Rechtschaffen A, Kales A. <em>A Manual of Standardized Terminology, Techniques and Scoring System for Sleep Stages of Human Subjects</em>. 1968 (a book, no DOI). Its replacement, the AASM rules, compared with it in: Moser D, et al. Sleep classification according to AASM and Rechtschaffen &amp; Kales: effects on sleep scoring parameters. <em>Sleep</em>. 2009;32(2):139–149. <a target="_blank" rel="noopener" href="https://doi.org/10.1093/sleep/32.2.139">doi:10.1093/sleep/32.2.139</a>; and Berry RB, et al. AASM Scoring Manual updates for 2017 (version 2.4). <em>Journal of Clinical Sleep Medicine</em>. 2017;13(5):665–666. <a target="_blank" rel="noopener" href="https://doi.org/10.5664/jcsm.6576">doi:10.5664/jcsm.6576</a></li>
+      <li id="ref-oster">Oster G. Auditory beats in the brain. <em>Scientific American</em>. 1973;229(4):94–102. <a target="_blank" rel="noopener" href="https://doi.org/10.1038/scientificamerican1073-94">doi:10.1038/scientificamerican1073-94</a></li>
+      <li id="ref-ingendoh">Ingendoh RM, Posny ES, Heine A. Binaural beats to entrain the brain? A systematic review of the effects of binaural beat stimulation on brain oscillatory activity. <em>PLOS ONE</em>. 2023;18(5):e0286023. <a target="_blank" rel="noopener" href="https://doi.org/10.1371/journal.pone.0286023">doi:10.1371/journal.pone.0286023</a></li>
+      <li id="ref-garcia">Garcia-Argibay M, Santed MA, Reales JM. Efficacy of binaural auditory beats in cognition, anxiety, and pain perception: a meta-analysis. <em>Psychological Research</em>. 2019;83(2):357–372. <a target="_blank" rel="noopener" href="https://doi.org/10.1007/s00426-018-1066-8">doi:10.1007/s00426-018-1066-8</a></li>
+      <li id="ref-lehrer">Lehrer PM, Gevirtz R. Heart rate variability biofeedback: how and why does it work? <em>Frontiers in Psychology</em>. 2014;5:756. <a target="_blank" rel="noopener" href="https://doi.org/10.3389/fpsyg.2014.00756">doi:10.3389/fpsyg.2014.00756</a></li>
+      <li id="ref-zaccaro">Zaccaro A, et al. How breath-control can change your life: a systematic review on psycho-physiological correlates of slow breathing. <em>Frontiers in Human Neuroscience</em>. 2018;12:353. <a target="_blank" rel="noopener" href="https://doi.org/10.3389/fnhum.2018.00353">doi:10.3389/fnhum.2018.00353</a></li>
+      <li id="ref-iaccarino">Iaccarino HF, et al. Gamma frequency entrainment attenuates amyloid load and modifies microglia. <em>Nature</em>. 2016;540:230–235. <a target="_blank" rel="noopener" href="https://doi.org/10.1038/nature20587">doi:10.1038/nature20587</a></li>
+      <li id="ref-martorell">Martorell AJ, et al. Multi-sensory gamma stimulation ameliorates Alzheimer's-associated pathology and improves cognition. <em>Cell</em>. 2019;177(2):256–271. <a target="_blank" rel="noopener" href="https://doi.org/10.1016/j.cell.2019.02.014">doi:10.1016/j.cell.2019.02.014</a></li>
+      <li id="ref-schumann">Schumann WO. Über die strahlungslosen Eigenschwingungen einer leitenden Kugel, die von einer Luftschicht und einer Ionosphärenhülle umgeben ist. <em>Zeitschrift für Naturforschung A</em>. 1952;7(2):149–154. <a target="_blank" rel="noopener" href="https://doi.org/10.1515/zna-1952-0202">doi:10.1515/zna-1952-0202</a>; and Balser M, Wagner CA. Observations of Earth–ionosphere cavity resonances. <em>Nature</em>. 1960;188:638–641. <a target="_blank" rel="noopener" href="https://doi.org/10.1038/188638a0">doi:10.1038/188638a0</a></li>
+      <li id="ref-weitzberg">Weitzberg E, Lundberg JON. Humming greatly increases nasal nitric oxide. <em>American Journal of Respiratory and Critical Care Medicine</em>. 2002;166(2):144–145. <a target="_blank" rel="noopener" href="https://doi.org/10.1164/rccm.200202-138BC">doi:10.1164/rccm.200202-138BC</a></li>
+      <li id="ref-klimesch">Klimesch W. EEG alpha and theta oscillations reflect cognitive and memory performance: a review and analysis. <em>Brain Research Reviews</em>. 1999;29(2–3):169–195. <a target="_blank" rel="noopener" href="https://doi.org/10.1016/s0165-0173(98)00056-3">doi:10.1016/s0165-0173(98)00056-3</a></li>
+      <li id="ref-barry">Barry RJ, Clarke AR, Johnstone SJ, Magee CA, Rushby JA. EEG differences between eyes-closed and eyes-open resting conditions. <em>Clinical Neurophysiology</em>. 2007;118(12):2765–2773. <a target="_blank" rel="noopener" href="https://doi.org/10.1016/j.clinph.2007.07.028">doi:10.1016/j.clinph.2007.07.028</a></li>
+      <li id="ref-buzsaki">Buzsáki G. Theta oscillations in the hippocampus. <em>Neuron</em>. 2002;33(3):325–340. <a target="_blank" rel="noopener" href="https://doi.org/10.1016/s0896-6273(02)00586-x">doi:10.1016/s0896-6273(02)00586-x</a></li>
+      <li id="ref-knyazev">Knyazev GG. EEG delta oscillations as a correlate of basic homeostatic and motivational processes. <em>Neuroscience &amp; Biobehavioral Reviews</em>. 2012;36(1):677–695. <a target="_blank" rel="noopener" href="https://doi.org/10.1016/j.neubiorev.2011.10.002">doi:10.1016/j.neubiorev.2011.10.002</a></li>
+      <li id="ref-engel">Engel AK, Fries P. Beta-band oscillations: signalling the status quo? <em>Current Opinion in Neurobiology</em>. 2010;20(2):156–165. <a target="_blank" rel="noopener" href="https://doi.org/10.1016/j.conb.2010.02.015">doi:10.1016/j.conb.2010.02.015</a></li>
+      <li id="ref-galambos">Galambos R, Makeig S, Talmachoff PJ. A 40-Hz auditory potential recorded from the human scalp. <em>PNAS</em>. 1981;78(4):2643–2647. <a target="_blank" rel="noopener" href="https://doi.org/10.1073/pnas.78.4.2643">doi:10.1073/pnas.78.4.2643</a></li>
+    </ol>
+    <p class="hint">DOIs were checked against PubMed and Crossref, the official DOI registry. The tuning standards and the solfeggio and Om origins come from standard histories of music and have no single paper to cite.</p>
+  </section>
+  <footer class="credit">
+    <span>Made by Ivan · © 2026</span>
+  </footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const BANDS = [
+  { name: 'Delta', lo: 0.5, hi: 4, mid: 2, use: 'Deep, dreamless sleep (N3)' },
+  { name: 'Theta', lo: 4, hi: 8, mid: 6, use: 'Drowsiness, light sleep, meditation' },
+  { name: 'Alpha', lo: 8, hi: 13, mid: 10, use: 'Relaxed and awake, eyes closed' },
+  { name: 'Beta', lo: 13, hi: 30, mid: 18, use: 'Alert, focused, active thinking' },
+  { name: 'Gamma', lo: 30, hi: 45, mid: 40, use: 'Attention and memory; 40 Hz studies' }
+];
+const TONES = [
+  { hz: 110, name: 'A2 hum drone' }, { hz: 136.1, name: 'Om' }, { hz: 174, name: 'Solfeggio' }, { hz: 200, name: 'Classic carrier' },
+  { hz: 396, name: 'Solfeggio' }, { hz: 432, name: 'A = 432' }, { hz: 440, name: 'A = 440' },
+  { hz: 528, name: 'Solfeggio' }, { hz: 639, name: 'Solfeggio' }, { hz: 741, name: 'Solfeggio' }
+];
+const HINTS = {
+  binaural: 'Headphones required. Left ear hears the carrier, right ear hears carrier + beat; your brain perceives the difference as a slow beat.',
+  isochronic: 'Works on speakers. One tone switched on and off at the beat rate, giving a distinct pulse.',
+  monaural: 'Works on speakers. Both tones mixed together, so the beat is a real, audible wobble.',
+  pure: 'A single steady tone at the carrier frequency, for solfeggio, 432 Hz and similar tones.'
+};
+const HARMONICS = [
+  { r: 0.5, name: 'Octave below', frac: '1 : 2' }, { r: 1.25, name: 'Major third', frac: '5 : 4' },
+  { r: 4 / 3, name: 'Perfect fourth', frac: '4 : 3' }, { r: 1.5, name: 'Perfect fifth', frac: '3 : 2' },
+  { r: 2, name: 'Octave', frac: '2 : 1' }, { r: 3, name: 'Harmonic 3', frac: '3 : 1' },
+  { r: 5, name: 'Harmonic 5', frac: '5 : 1' }
+];
+
+const S = { mode: 'binaural', carrier: 200, beat: 10, vol: 35, minutes: 20, tempo: 60, playing: false,
+  layers: [
+    { id: 1, hz: 300, vol: 30, on: false, pulse: 2, follow: true, ratio: 1.5 },
+    { id: 2, hz: 110, vol: 25, on: false, pulse: 0, follow: false, ratio: 1 }
+  ] };
+let nextId = 3;
+
+/* ---------- music math ---------- */
+const NOTE = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+const cents = r => 1200 * Math.log2(r);
+const pcOf = m => ((m % 12) + 12) % 12;
+// reference pitches people actually tune A4 to
+const REFS = [
+  { hz: 415, name: 'Baroque (period instruments)' }, { hz: 422.5, name: "Handel's tuning fork, 1751" },
+  { hz: 430, name: 'Classical era (Mozart, Haydn)' }, { hz: 432, name: '"Verdi" / 432 tuning' },
+  { hz: 435, name: 'French diapason normal, 1859' }, { hz: 440, name: 'International standard (ISO 16)' },
+  { hz: 442, name: 'Many orchestras today' }, { hz: 443, name: 'Some German and Austrian orchestras' },
+  { hz: 466, name: 'Baroque Chorton (church organs)' }
+];
+// each temperament as cents away from equal temperament for C, C♯ … B, built in the key of C
+const fromRatios = rs => rs.map((r, i) => cents(r) - 100 * i);
+function meantoneDev() {
+  const fifth = cents(5) / 4, dev = Array(12).fill(0);   // quarter-comma: four fifths make a pure 5 : 4 third
+  for (let k = -3; k <= 8; k++) { const pc = pcOf(7 * k), c = ((k * fifth) % 1200 + 1200) % 1200; dev[pc] = c - 100 * pc; }
+  return dev;
+}
+const TEMPS = {
+  equal: { name: 'Equal temperament', dev: Array(12).fill(0),
+    desc: 'Every semitone exactly 100¢ (a ratio of 2<sup>1/12</sup>). Every key sounds the same; no interval except the octave is pure. Standard on pianos since the late 1800s.' },
+  just: { name: 'Just intonation (5-limit)', dev: fromRatios([1, 16 / 15, 9 / 8, 6 / 5, 5 / 4, 4 / 3, 45 / 32, 3 / 2, 8 / 5, 5 / 3, 9 / 5, 15 / 8]),
+    desc: 'Every note a pure whole-number ratio from the tonic (5 : 4 thirds, 3 : 2 fifths). Beautiful in one key, out of tune in distant ones.' },
+  pythagorean: { name: 'Pythagorean', dev: fromRatios([1, 2187 / 2048, 9 / 8, 32 / 27, 81 / 64, 4 / 3, 729 / 512, 3 / 2, 6561 / 4096, 27 / 16, 16 / 9, 243 / 128]),
+    desc: 'Built from a chain of pure 3 : 2 fifths. Pure fifths and fourths, but very wide 408¢ major thirds. Used in the Middle Ages.' },
+  meantone: { name: 'Quarter-comma meantone', dev: meantoneDev(),
+    desc: 'The Renaissance and early Baroque keyboard tuning (1500s–1700s): pure 5 : 4 major thirds, slightly narrow fifths, and one unusable "wolf" fifth.' },
+  werckmeister: { name: 'Werckmeister III (1691)', dev: [0, -9.8, -7.8, -5.9, -9.8, -2.0, -11.7, -3.9, -7.8, -11.7, -3.9, -7.8],
+    desc: 'A well temperament: four fifths narrowed by ¼ comma, the rest pure. Every key is playable and each has its own color. Often linked to Bach.' },
+  kirnberger: { name: 'Kirnberger III (1779)', dev: [0, -9.8, -6.8, -5.9, -13.7, -2.0, -9.8, -3.4, -7.8, -10.3, -3.9, -11.7],
+    desc: 'A well temperament by a student of Bach, with a pure C–E major third and very sweet keys near C.' },
+  vallotti: { name: 'Vallotti (mid-1700s)', dev: [0, -5.9, -3.9, -2.0, -7.8, 2.0, -7.8, -2.0, -3.9, -5.9, 0, -9.8],
+    desc: 'A well temperament: six fifths narrowed by ⅙ comma, six pure. Popular today for Baroque and Classical music.' }
+};
+const TUNE = { ref: 440, temp: 'equal', tonic: 0 };
+// cents offset of a key from equal temperament, rotated to the chosen tonic and shifted so A always sits exactly on the reference
+function devFor(pc, t = TUNE) {
+  const d = TEMPS[t.temp].dev;
+  return d[pcOf(pc - t.tonic)] - d[pcOf(9 - t.tonic)];
+}
+const keyHzOf = (m, t = TUNE) => t.ref * Math.pow(2, (m - 69) / 12 + devFor(pcOf(m), t) / 1200);
+function noteOf(f, t = TUNE) {
+  const m0 = Math.round(69 + 12 * Math.log2(f / t.ref));
+  let best = null;
+  for (let m = m0 - 1; m <= m0 + 1; m++) {
+    const c = cents(f / keyHzOf(m, t));
+    if (!best || Math.abs(c) < Math.abs(best.c)) best = { m, c };
+  }
+  return { midi: best.m, cents: Math.round(best.c), name: NOTE[pcOf(best.m)] + (Math.floor(best.m / 12) - 1), keyHz: keyHzOf(best.m, t) };
+}
+const centsTxt = c => c === 0 ? 'in tune' : (c > 0 ? '+' : '−') + Math.abs(c) + '¢';
+const gcd = (a, b) => b ? gcd(b, a % b) : a;
+const ET_NAMES = ['unison', 'minor second', 'major second', 'minor third', 'major third', 'perfect fourth', 'tritone',
+  'perfect fifth', 'minor sixth', 'major sixth', 'minor seventh', 'major seventh'];
+function primeLimit(n) { let m = n, l = 1; for (let p = 2; p * p <= m; p++) while (m % p === 0) { l = Math.max(l, p); m /= p; } return Math.max(l, m > 1 ? m : 1); }
+const TUNING = {
+  1: 'unison, pure in every tuning system',
+  2: 'octave, pure in every tuning system',
+  3: 'Pythagorean tuning, which builds every note from pure 3 : 2 fifths (also pure in just intonation)',
+  5: '5-limit just intonation, which adds the 5th harmonic and its pure 5 : 4 major third',
+  7: '7-limit (septimal) just intonation, from the 7th harmonic; no piano key matches it'
+};
+const tuningOf = lim => TUNING[lim] || `${lim}-limit just intonation, from the ${lim}th harmonic`;
+function ratioOf(f, base) {
+  const r = f / base;
+  for (let q = 1; q <= 16; q++) {
+    const p = Math.round(r * q); if (p < 1) continue;
+    const err = 1200 * Math.log2(r * q / p);
+    if (Math.abs(err) <= 6) { const g = gcd(p, q); return { p: p / g, q: q / g, err: Math.round(err) }; }
+  }
+  return null;
+}
+// describes tone f against the carrier: interval name, ratio, tuning system and how the piano's version differs
+function intervalReport(f, base) {
+  const c = 1200 * Math.log2(f / base), semis = Math.round(c / 100), a = Math.abs(semis), pc = a % 12, o = Math.floor(a / 12);
+  const s = n => n === 1 ? '' : 's', dir = semis >= 0 ? 'above' : 'below', sign = v => v >= 0 ? '+' : '−';
+  const name = pc === 0 ? (o ? `${o} octave${s(o)} ${dir}` : 'unison with') : `${ET_NAMES[pc]}${o ? ` + ${o} octave${s(o)}` : ''} ${dir}`;
+  const lines = [`<b>${name}</b> the carrier · ${sign(c)}${Math.abs(c).toFixed(1)}¢ (${sign(semis)}${a} semitone${s(a)})`];
+  const rat = ratioOf(f, base);
+  if (rat) {
+    const ji = 1200 * Math.log2(rat.p / rat.q), dev = Math.round(ji - semis * 100);
+    let t = `Ratio <b>${rat.p} : ${rat.q}</b> (pure = ${ji.toFixed(1)}¢) · ${tuningOf(primeLimit(rat.p * rat.q))}`;
+    if (rat.q === 1 && rat.p > 1) t += ` · harmonic ${rat.p} of the carrier`;
+    if (rat.p === 1 && rat.q > 1) t += ` · subharmonic 1/${rat.q} of the carrier`;
+    lines.push(t);
+    if (Math.abs(dev) >= 1) lines.push(`On a piano (equal temperament) this interval is ${semis * 100}¢, ${Math.abs(dev)}¢ ${dev > 0 ? 'narrower' : 'wider'} than the pure ratio.`);
+    if (rat.err) lines.push(`Your tone is ${centsTxt(rat.err)} off the pure ratio, so it beats against the carrier about ${fmt(Math.abs(rat.q * f - rat.p * base))} times a second.`);
+  } else if (Math.abs(c - semis * 100) < 2) {
+    lines.push(`Equal-tempered interval: ratio 2<sup>${semis}/12</sup> = ${(f / base).toFixed(4)} : 1, which has no simple whole-number ratio`);
+  } else {
+    const off = Math.round(c - semis * 100);
+    lines.push(`Ratio ${(f / base).toFixed(4)} : 1, not close to a simple ratio; ${Math.abs(off)}¢ ${off > 0 ? 'sharp' : 'flat'} of the piano's ${pc ? ET_NAMES[pc] : 'octave'}`);
+  }
+  return lines;
+}
+
+/* ---------- audio ---------- */
+let ctx, master, voice = null, layerNodes = new Map(), stopTimer = null, endAt = 0, tick = null, wakeLock = null;
+function ensureCtx() {
+  if (ctx) return;
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  master = ctx.createGain(); master.gain.value = 0;
+  const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -10; comp.ratio.value = 4;
+  master.connect(comp); comp.connect(ctx.destination);
+}
+function osc(f) { const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f; o.start(); return o; }
+function gain(v) { const g = ctx.createGain(); g.gain.value = v; return g; }
+function glide(param, v) { param.setTargetAtTime(v, ctx.currentTime, 0.05); }
+// turns a sine LFO into a smooth on/off pulse between 0 and `top`
+function pulseShaper(top) {
+  const s = ctx.createWaveShaper(), n = 1024, curve = new Float32Array(n);
+  for (let i = 0; i < n; i++) { const x = i / (n - 1) * 2 - 1; curve[i] = 0.5 * (Math.tanh(5 * x) / Math.tanh(5) + 1) * top; }
+  s.curve = curve; return s;
+}
+
+function buildVoice() {
+  const out = gain(1), oscs = [];
+  const L = S.carrier, R = S.carrier + S.beat;
+  let update;
+  if (S.mode === 'pure') {
+    const a = osc(L); a.connect(gain(0.5)).connect(out); oscs.push(a);
+    update = () => glide(a.frequency, S.carrier);
+  } else if (S.mode === 'binaural') {
+    const merger = ctx.createChannelMerger(2), a = osc(L), b = osc(R);
+    a.connect(gain(0.5)).connect(merger, 0, 0);
+    b.connect(gain(0.5)).connect(merger, 0, 1);
+    merger.connect(out); oscs.push(a, b);
+    update = () => { glide(a.frequency, S.carrier); glide(b.frequency, S.carrier + S.beat); };
+  } else if (S.mode === 'monaural') {
+    const a = osc(L), b = osc(R), mix = gain(0.3);
+    a.connect(mix); b.connect(mix); mix.connect(out); oscs.push(a, b);
+    update = () => { glide(a.frequency, S.carrier); glide(b.frequency, S.carrier + S.beat); };
+  } else {
+    const a = osc(L), amp = gain(0), lfo = osc(S.beat);
+    lfo.connect(pulseShaper(0.55)).connect(amp.gain);
+    a.connect(amp).connect(out); oscs.push(a, lfo);
+    update = () => { glide(a.frequency, S.carrier); glide(lfo.frequency, S.beat); };
+  }
+  return { out, update, stop() { oscs.forEach(o => { try { o.stop(); } catch (e) {} }); out.disconnect(); } };
+}
+function swapVoice() {
+  if (!S.playing) return;
+  const old = voice, now = ctx.currentTime;
+  old.out.gain.setTargetAtTime(0, now, 0.08);
+  setTimeout(() => old.stop(), 500);
+  voice = buildVoice(); voice.out.gain.value = 0; voice.out.connect(master);
+  voice.out.gain.setTargetAtTime(1, now, 0.15);
+}
+
+const layerHz = l => l.follow ? S.carrier * l.ratio : l.hz;
+function killLayer(id) {
+  const n = layerNodes.get(id); if (!n) return;
+  n.g.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
+  setTimeout(() => { n.oscs.forEach(o => { try { o.stop(); } catch (e) {} }); n.g.disconnect(); }, 400);
+  layerNodes.delete(id);
+}
+function syncLayers() {
+  if (!ctx) return;
+  const want = new Set(S.playing ? S.layers.filter(l => l.on).map(l => l.id) : []);
+  for (const id of [...layerNodes.keys()]) if (!want.has(id)) killLayer(id);
+  for (const l of S.layers) {
+    if (!want.has(l.id)) continue;
+    let n = layerNodes.get(l.id);
+    if (n && n.pulse !== l.pulse) { killLayer(l.id); n = null; }
+    if (!n) {
+      const o = osc(layerHz(l)), pg = gain(l.pulse ? 0 : 1), g = gain(0), oscs = [o];
+      let lfo = null;
+      if (l.pulse) { lfo = osc(S.beat / l.pulse); lfo.connect(pulseShaper(1)).connect(pg.gain); oscs.push(lfo); }
+      o.connect(pg).connect(g).connect(master);
+      n = { o, lfo, g, oscs, pulse: l.pulse }; layerNodes.set(l.id, n);
+    }
+    glide(n.o.frequency, layerHz(l));
+    if (n.lfo) glide(n.lfo.frequency, S.beat / l.pulse);
+    n.g.gain.setTargetAtTime(l.vol / 100 * 0.5, ctx.currentTime, 0.1);
+  }
+}
+
+async function start() {
+  ensureCtx(); clearTimeout(stopTimer);
+  await ctx.resume();
+  if (voice) voice.stop();
+  S.playing = true; tPlay = 0;
+  voice = buildVoice(); voice.out.connect(master);
+  syncLayers();
+  master.gain.cancelScheduledValues(ctx.currentTime);
+  master.gain.setTargetAtTime(S.vol / 100, ctx.currentTime, 0.8);
+  endAt = S.minutes > 0 ? Date.now() + S.minutes * 60000 : 0;
+  clearInterval(tick); tick = setInterval(updateStatus, 1000);
+  requestWake();
+  render();
+}
+function stop() {
+  if (!S.playing) return;
+  S.playing = false; clearInterval(tick);
+  master.gain.cancelScheduledValues(ctx.currentTime);
+  master.gain.setTargetAtTime(0, ctx.currentTime, 0.5);
+  const v = voice; voice = null;
+  stopTimer = setTimeout(() => { v && v.stop(); syncLayers(); }, 2500);
+  releaseWake();
+  render();
+}
+async function requestWake() { try { if (!wakeLock) wakeLock = await navigator.wakeLock?.request('screen'); } catch (e) {} }
+function releaseWake() { if (S.playing || P.on) return; try { wakeLock?.release(); } catch (e) {} wakeLock = null; }
+
+/* ---------- main UI ---------- */
+const fmt = v => (Math.round(v * 10) / 10).toFixed(1);
+const fmtHz = v => Number.isInteger(Math.round(v * 100) / 100) ? String(Math.round(v)) : fmt(v);
+const bandOf = b => (BANDS.find(x => b < x.hi) || BANDS[BANDS.length - 1]).name;
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+function updateStatus() {
+  if (!S.playing) { $('status').textContent = 'Stopped'; return; }
+  if (!endAt) { $('status').textContent = 'Playing'; return; }
+  const left = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+  $('status').textContent = `Playing · ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')} left`;
+  if (left <= 0) stop();
+}
+
+function render() {
+  const pure = S.mode === 'pure';
+  $('beatField').hidden = pure;
+  $('readoutLabel').textContent = pure ? 'Tone' : 'Beat frequency';
+  $('bigNum').textContent = fmt(pure ? S.carrier : S.beat);
+  $('bandName').textContent = pure ? noteOf(S.carrier).name : bandOf(S.beat).toLowerCase();
+  const L = S.carrier, R = S.carrier + S.beat;
+  $('pair').innerHTML = pure ? `<span class="l">Both ears <b>${fmt(L)} Hz</b></span>`
+    : S.mode === 'binaural' ? `<span class="l">Left <b>${fmt(L)} Hz</b></span><span class="r">Right <b>${fmt(R)} Hz</b></span><span>Difference ${fmt(S.beat)} Hz</span>`
+    : S.mode === 'monaural' ? `<span class="l">Tone A <b>${fmt(L)} Hz</b></span><span class="r">Tone B <b>${fmt(R)} Hz</b></span><span>Both ears</span>`
+    : `<span class="l">Tone <b>${fmt(L)} Hz</b></span><span class="r">Pulsing <b>${fmt(S.beat)}×/sec</b></span>`;
+  $('modeHint').textContent = HINTS[S.mode];
+  document.querySelectorAll('#modes button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === S.mode));
+  $('play').textContent = S.playing ? 'Stop tone' : 'Start tone';
+  $('play').setAttribute('aria-pressed', S.playing);
+  $('carrier').value = Math.min(S.carrier, 1000); $('carrierNum').value = S.carrier;
+  $('beat').value = S.beat; $('beatNum').value = S.beat;
+  $('vol').value = S.vol; $('volOut').textContent = S.vol + '%';
+  $('minutes').value = S.minutes; $('tempo').value = S.tempo;
+  document.querySelectorAll('.bandcard').forEach(c => c.setAttribute('aria-pressed', !pure && c.dataset.band === bandOf(S.beat)));
+  $('tblCarrier').textContent = fmt(S.carrier); $('tblTempo').textContent = S.tempo;
+  $('ratioRows').innerHTML = BANDS.map(b => {
+    const r = S.carrier + b.mid, f = fitRhythm(b.mid);
+    return `<tr><td>${b.name} <span class="hint">${b.lo}–${b.hi} Hz</span></td><td class="mono">${fmt(b.mid)} Hz</td>
+      <td class="mono"><span class="l-c">${fmt(S.carrier)} Hz</span></td><td class="mono"><span class="r-c">${fmt(r)} Hz</span></td>
+      <td class="mono">${(r / S.carrier).toFixed(4)} : 1</td><td>${f.exact ? '' : '≈ '}${f.short}</td></tr>`;
+  }).join('');
+  renderRhythm(); renderNotes(); renderLayerInfo();
+  updateStatus();
+  if (S.playing && voice) { voice.update(); syncLayers(); }
+}
+
+/* ---------- rhythm + notation ---------- */
+const SUB = {
+  0.25: ['whole notes', 'whole'], 0.5: ['half notes', 'halves'], 1: ['quarter notes', 'quarters'], 2: ['eighth notes', 'eighths'],
+  3: ['eighth-note triplets', 'triplets'], 4: ['sixteenth notes', 'sixteenths'], 5: ['sixteenth-note quintuplets', 'quintuplets'],
+  6: ['sixteenth-note sextuplets', 'sextuplets'], 7: ['sixteenth-note septuplets', 'septuplets'], 8: ['thirty-second notes', '32nds'],
+  12: ['thirty-second-note sextuplets ×2', '12 per beat'], 16: ['sixty-fourth notes', '64ths']
+};
+const subName = n => SUB[n] || [`${n} notes per beat (tuplet)`, `${n} per beat`];
+const COUNTS = { 1: '1 · 2 · 3 · 4', 2: '1 & 2 & 3 & 4 &', 3: '1-trip-let 2-trip-let 3-trip-let 4-trip-let', 4: '1 e & a 2 e & a 3 e & a 4 e & a',
+  6: '1-la-li-la-li-la 2-la-li…', 0.5: '1 (2) 3 (4)', 0.25: '1 (2 3 4)' };
+function fitRhythm(beat) {
+  const p = beat / (S.tempo / 60);
+  let n;
+  if (p < 0.75) n = Math.abs(Math.log2(p / 0.25)) < Math.abs(Math.log2(p / 0.5)) ? 0.25 : 0.5;
+  else n = clamp(Math.round(p), 1, 16);
+  const exact = Math.abs(p - n) / n < 0.005;
+  return { p, n, exact, name: subName(n)[0], short: subName(n)[1] };
+}
+const isPow2 = n => (n & (n - 1)) === 0;
+let notationTotal = 0, litNote = -1, beatXs = [], perBeat = 1, litBeat = -1;
+function notationSvg(n) {
+  const x0 = 84, x1 = 584, mid = 64, out = [];
+  for (let i = 0; i < 5; i++) out.push(`<line class="st" x1="10" x2="590" y1="${46 + i * 9}" y2="${46 + i * 9}"/>`);
+  out.push(`<rect class="ink" x="18" y="55" width="3" height="18"/><rect class="ink" x="25" y="55" width="3" height="18"/>`);
+  const groups = n > 8 ? 1 : (n < 1 ? 1 : 4);
+  const top = n > 8 ? 1 : 4;
+  out.push(`<text class="svgtext" x="48" y="61" font-size="22" text-anchor="middle">${top}</text><text class="svgtext" x="48" y="80" font-size="22" text-anchor="middle">4</text>`);
+  out.push(`<text class="svgmono" x="10" y="16">♩ = ${S.tempo}</text>`);
+  if (n > 8) out.push(`<text class="svgmono" x="584" y="97" text-anchor="end">one beat shown</text>`);
+  out.push(`<line class="inkline" x1="${x1}" x2="${x1}" y1="46" y2="82" stroke-width="1.2"/><rect class="ink" x="${x1 + 3}" y="46" width="4" height="36"/>`);
+  let idx = 0;
+  const head = (cx, hollow) => `<ellipse class="nh${hollow ? ' hollow' : ''}" data-i="${idx++}" cx="${cx}" cy="${mid}" rx="${hollow ? 7 : 6.2}" ry="${hollow ? 5 : 4.6}" transform="rotate(-20 ${cx} ${mid})"/>`;
+  const stem = cx => `<line class="inkline" x1="${cx + 5.6}" x2="${cx + 5.6}" y1="${mid - 1}" y2="30" stroke-width="1.4"/>`;
+  beatXs = []; perBeat = n < 1 ? 1 : n;
+  if (n === 0.25) { beatXs.push((x0 + x1) / 2); out.push(head(beatXs[0], true)); }
+  else if (n === 0.5) { [0, 1].forEach(j => { const cx = x0 + (x1 - x0) * (j + 0.5) / 2; beatXs.push(cx); out.push(head(cx, true), stem(cx)); }); }
+  else {
+    const beams = Math.floor(Math.log2(n)), gw = (x1 - x0) / groups;
+    for (let g = 0; g < groups; g++) {
+      const gx = x0 + g * gw, xs = [];
+      for (let j = 0; j < n; j++) xs.push(gx + gw * (j + 0.5) / n - 3);
+      beatXs.push(xs[0]);
+      xs.forEach(cx => out.push(head(cx, false), stem(cx)));
+      if (n > 1) for (let b = 0; b < beams; b++) out.push(`<rect class="ink" x="${xs[0] + 4.9}" y="${30 + b * 6}" width="${xs[n - 1] - xs[0] + 1.4}" height="3.6"/>`);
+      if (!isPow2(n)) out.push(`<text class="svgtext" x="${(xs[0] + xs[n - 1]) / 2 + 5}" y="23" font-size="14" font-style="italic" text-anchor="middle">${n}</text>`);
+    }
+  }
+  // arrow over the first note of the current beat; it waits on beat 1 while stopped
+  out.push(`<g id="beatArrow" class="beat-arrow idle" style="transform: translateX(${beatXs[0]}px)"><path d="M-8 0 H8 L0 14 Z"/><text x="11" y="12">1</text></g>`);
+  notationTotal = idx; litNote = -1; litBeat = -1;
+  return `<svg viewBox="0 0 600 100" role="img" aria-label="${subName(n)[0]} at quarter note equals ${S.tempo}">${out.join('')}</svg>`;
+}
+let lastNotationKey = '';
+function renderRhythm() {
+  const beat = S.mode === 'pure' ? 0 : S.beat;
+  if (!beat) {
+    $('notation').innerHTML = '<p class="hint">Pure tone mode has no beat. Pick another method to see the rhythm.</p>';
+    $('rhythmFacts').innerHTML = ''; $('exactChips').innerHTML = ''; lastNotationKey = ''; notationTotal = 0; return;
+  }
+  document.querySelectorAll('#clockTempos button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.tempo === S.tempo));
+  const f = fitRhythm(beat), key = f.n + '|' + S.tempo;
+  if (key !== lastNotationKey) { $('notation').innerHTML = notationSvg(f.n); lastNotationKey = key; }
+  const perMin = Math.round(beat * 60);
+  const drift = Math.abs(beat - f.n * S.tempo / 60);
+  const rows = [
+    ['Pulses', `${fmt(beat)} Hz = <b class="mono">${fmt(f.p)}</b> pulses per beat at ♩ = ${S.tempo} (${perMin} per minute)`],
+    ['Closest notation', `${f.exact ? '' : '≈ '}${f.name}${f.exact ? ', exact' : ''}`],
+  ];
+  if (!f.exact) rows.push(['Drift', `The beat runs ${beat > f.n * S.tempo / 60 ? 'ahead of' : 'behind'} the notes, slipping one full pulse every ${fmt(1 / drift)} s.`]);
+  if (COUNTS[f.n]) rows.push(['Count it', `<span class="mono">${COUNTS[f.n]}</span>`]);
+  $('rhythmFacts').innerHTML = rows.map(r => `<div class="row"><dt>${r[0]}</dt><dd>${r[1]}</dd></div>`).join('');
+  const chips = [];
+  for (const n of [1, 2, 3, 4, 6, 8]) {
+    const t = Math.round(beat * 60 / n * 10) / 10;
+    if (t >= 30 && t <= 240 && Math.abs(t - S.tempo) > 0.05) chips.push(`<button class="chip" data-tempo="${t}">${subName(n)[1]}<small>♩ = ${fmtHz(t)}</small></button>`);
+  }
+  if (!f.exact && f.n >= 1) {
+    const snap = Math.round(f.n * S.tempo / 60 * 100) / 100;
+    if (snap >= 0.5 && snap <= 45) chips.unshift(`<button class="chip" data-snap="${snap}">Snap beat to ${fmtHz(snap)} Hz<small>${f.short}</small></button>`);
+  }
+  $('exactLabel').textContent = f.exact ? 'Same beat at other tempos' : 'Make it line up exactly';
+  $('exactChips').innerHTML = chips.join('') || '<span class="hint">No other tempo between 30 and 240 fits this beat cleanly.</span>';
+}
+$('exactChips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.tempo) S.tempo = +b.dataset.tempo; else if (b.dataset.snap) S.beat = +b.dataset.snap;
+  render();
+});
+$('clockTempos').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.tempo = +b.dataset.tempo; render(); } });
+$('tempo').addEventListener('change', e => { S.tempo = clamp(Math.round((+e.target.value || 60) * 10) / 10, 20, 300); render(); });
+
+/* ---------- piano ---------- */
+function keyboardSvg(marks) {
+  const ms = marks.map(m => m.midi);
+  let start = 12 * Math.floor(Math.min(...ms) / 12);
+  let span = 24; if (Math.max(...ms) >= start + span) span = 36;
+  const WH = [0, 2, 4, 5, 7, 9, 11], out = [], whites = [];
+  for (let m = start; m <= start + span; m++) if (WH.includes(((m % 12) + 12) % 12)) whites.push(m);
+  const W = whites.length * 20;
+  const xOf = m => { const pc = ((m % 12) + 12) % 12; if (WH.includes(pc)) return whites.indexOf(m) * 20 + 10; return whites.indexOf(m - 1) * 20 + 20; };
+  whites.forEach((m, i) => {
+    out.push(`<rect class="wkey" x="${i * 20 + 0.5}" y="0.5" width="19" height="83" rx="2"/>`);
+    if (m % 12 === 0) out.push(`<text class="keylabel" x="${i * 20 + 10}" y="79" text-anchor="middle">C${m / 12 - 1}</text>`);
+  });
+  for (let m = start; m <= start + span; m++) if (!WH.includes(((m % 12) + 12) % 12) && whites.includes(m - 1) && whites.includes(m + 1))
+    out.push(`<rect class="bkey" x="${xOf(m) - 6.5}" y="0" width="13" height="52" rx="1.5"/>`);
+  const placed = {};
+  marks.forEach(mk => {
+    if (mk.midi < start || mk.midi > start + span) return;
+    const k = placed[mk.midi] = (placed[mk.midi] || 0) + 1;
+    const black = !WH.includes(((mk.midi % 12) + 12) % 12);
+    out.push(`<circle cx="${xOf(mk.midi)}" cy="${(black ? 40 : 64) - (k - 1) * 11}" r="${mk.small ? 3.5 : 5}" fill="var(${mk.color})" stroke="var(--surface)" stroke-width="1.5"/>`);
+  });
+  return `<svg viewBox="0 0 ${W} 84" role="img" aria-label="Piano keys with the tones marked">${out.join('')}</svg>`;
+}
+function renderNotes() {
+  const pure = S.mode === 'pure', L = S.carrier, R = S.carrier + S.beat;
+  const nl = noteOf(L), nr = noteOf(R);
+  const marks = [{ midi: nl.midi, color: '--left' }];
+  if (!pure) marks.push({ midi: nr.midi, color: '--right' });
+  S.layers.filter(l => l.on).forEach(l => marks.push({ midi: noteOf(layerHz(l)).midi, color: '--muted', small: true }));
+  $('keys').innerHTML = keyboardSvg(marks);
+  const rows = [[pure ? 'Tone' : 'Left ear', `<span class="l-c">●</span> ${fmt(L)} Hz → <b>${nl.name}</b> ${centsTxt(nl.cents)} <span class="hint">(key = ${fmt(nl.keyHz)} Hz)</span>`]];
+  if (!pure) {
+    rows.push(['Right ear', `<span class="r-c">●</span> ${fmt(R)} Hz → <b>${nr.name}</b> ${centsTxt(nr.cents)} <span class="hint">(key = ${fmt(nr.keyHz)} Hz)</span>`]);
+    const gap = Math.round(1200 * Math.log2(R / L));
+    rows.push(['Gap between ears', `${gap}¢, ${gap < 100 ? 'less than one piano key apart' : `about ${fmt(gap / 100)} keys apart`}`]);
+    let k = 0, f = S.beat; while (f < 130.8) { f *= 2; k++; }
+    const nb = noteOf(f);
+    rows.push(['Beat as a pitch', `${fmt(S.beat)} Hz is too low to hear as a note. Doubled ${k} times (${k} octaves up) it is ${fmt(f)} Hz → <b>${nb.name}</b> ${centsTxt(nb.cents)}.`]);
+  }
+  if (S.layers.some(l => l.on)) rows.push(['Extra tones', '<span class="hint">● grey dots on the keys</span>']);
+  $('noteFacts').innerHTML = rows.map(r => `<div class="row"><dt>${r[0]}</dt><dd>${r[1]}</dd></div>`).join('');
+  renderTuning();
+}
+
+/* reference pitch + temperament controls and the fit table */
+function renderTuning() {
+  const t = TEMPS[TUNE.temp];
+  if (document.activeElement !== $('refNum')) $('refNum').value = TUNE.ref;
+  $('refSel').value = REFS.some(r => r.hz === TUNE.ref) ? String(TUNE.ref) : 'custom';
+  $('tempSel').value = TUNE.temp; $('tonicSel').value = TUNE.tonic;
+  $('tonicField').hidden = TUNE.temp === 'equal';
+  $('tuneDesc').innerHTML = `<b>${t.name}, A4 = ${fmtHz(TUNE.ref)} Hz.</b> ${t.desc}`;
+  $('fitTemp').textContent = (TUNE.temp === 'equal' ? 'equal temperament' : t.name) +(TUNE.temp === 'equal' ? '' : ` in ${NOTE[TUNE.tonic]}`);
+  const pure = S.mode === 'pure';
+  const tones = [{ label: pure ? 'Tone' : 'Left', hz: S.carrier, cls: 'l-c' }];
+  if (!pure) tones.push({ label: 'Right', hz: S.carrier + S.beat, cls: 'r-c' });
+  S.layers.filter(l => l.on).forEach((l, i) => tones.push({ label: `Extra ${i + 1}`, hz: layerHz(l), cls: '' }));
+  const refs = REFS.map(r => r.hz);
+  if (!refs.includes(TUNE.ref)) refs.push(TUNE.ref);
+  refs.sort((a, b) => a - b);
+  const rows = refs.map(ref => {
+    const cells = tones.map(tn => noteOf(tn.hz, { ...TUNE, ref }));
+    return { ref, cells, avg: cells.reduce((a, c) => a + Math.abs(c.cents), 0) / cells.length };
+  });
+  const best = rows.reduce((a, r) => r.avg < a.avg ? r : a, rows[0]).ref;
+  $('fitHead').innerHTML = `<tr><th>A4</th>${tones.map(tn => `<th class="${tn.cls}">${tn.label}</th>`).join('')}<th>Avg off</th></tr>`;
+  $('fitRows').innerHTML = rows.map(r => `<tr data-ref="${r.ref}" class="${r.ref === TUNE.ref ? 'current' : ''} ${r.ref === best ? 'best' : ''}">
+    <td class="mono">${fmtHz(r.ref)}</td>${r.cells.map(c => `<td class="mono">${c.name} ${centsTxt(c.cents)}</td>`).join('')}<td class="mono">${Math.round(r.avg)}¢</td></tr>`).join('');
+}
+$('refSel').innerHTML = REFS.map(r => `<option value="${r.hz}">${r.hz} Hz · ${r.name}</option>`).join('') + '<option value="custom">Custom…</option>';
+$('tempSel').innerHTML = Object.entries(TEMPS).map(([k, t]) => `<option value="${k}">${t.name}</option>`).join('');
+$('tonicSel').innerHTML = NOTE.map((n, i) => `<option value="${i}">${n}</option>`).join('');
+$('refSel').addEventListener('change', e => { if (e.target.value === 'custom') { $('refNum').focus(); return; } TUNE.ref = +e.target.value; render(); });
+$('refNum').addEventListener('change', e => { TUNE.ref = clamp(Math.round((+e.target.value || 440) * 10) / 10, 380, 480); render(); });
+$('tempSel').addEventListener('change', e => { TUNE.temp = e.target.value; render(); });
+$('tonicSel').addEventListener('change', e => { TUNE.tonic = +e.target.value; render(); });
+$('fitRows').addEventListener('click', e => { const tr = e.target.closest('tr'); if (tr) { TUNE.ref = +tr.dataset.ref; render(); } });
+
+/* ---------- inputs ---------- */
+function setCarrier(v) { S.carrier = clamp(+v || 200, 20, 1500); render(); }
+function setBeat(v) { S.beat = clamp(+v || 10, 0.5, 45); render(); }
+$('carrier').addEventListener('input', e => setCarrier(e.target.value));
+$('carrierNum').addEventListener('change', e => setCarrier(e.target.value));
+$('beat').addEventListener('input', e => setBeat(e.target.value));
+$('beatNum').addEventListener('change', e => setBeat(e.target.value));
+$('vol').addEventListener('input', e => {
+  S.vol = +e.target.value; $('volOut').textContent = S.vol + '%';
+  if (S.playing) master.gain.setTargetAtTime(S.vol / 100, ctx.currentTime, 0.05);
+});
+$('minutes').addEventListener('change', e => {
+  S.minutes = clamp(Math.round(+e.target.value || 0), 0, 180);
+  if (S.playing) endAt = S.minutes > 0 ? Date.now() + S.minutes * 60000 : 0;
+  render();
+});
+$('modes').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || b.dataset.mode === S.mode) return;
+  S.mode = b.dataset.mode; swapVoice(); render();
+});
+$('play').addEventListener('click', () => S.playing ? stop() : start());
+$('tonePresets').innerHTML = TONES.map(t => `<button class="chip" data-hz="${t.hz}">${t.name}<small>${t.hz}</small></button>`).join('');
+$('tonePresets').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setCarrier(b.dataset.hz); });
+$('bands').innerHTML = BANDS.map(b => `<button class="bandcard" data-band="${b.name}" data-mid="${b.mid}">
+  <span class="name">${b.name}</span><span class="range">${b.lo}–${b.hi} Hz</span><span class="use">${b.use}</span></button>`).join('')
+  + `<button class="bandcard" data-band="Schumann" data-mid="7.83"><span class="name">Schumann</span><span class="range">7.83 Hz</span><span class="use">Earth–ionosphere resonance; theta/alpha border</span></button>`;
+$('bands').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (S.mode === 'pure') { S.mode = 'binaural'; swapVoice(); }
+  setBeat(b.dataset.mid);
+});
+
+/* ---------- extra tones ---------- */
+const PULSES = [[0, 'Steady'], [1, 'Pulse every beat'], [2, 'Every 2nd beat'], [3, 'Every 3rd beat'], [4, 'Every 4th beat']];
+function renderLayers() {
+  $('layers').innerHTML = S.layers.map(l => `<div class="layer" data-id="${l.id}">
+    <div class="layer-top">
+      <input type="checkbox" id="lon${l.id}" data-k="on" ${l.on ? 'checked' : ''} aria-label="Play this tone">
+      <span class="hz"><input type="number" id="lhz${l.id}" data-k="hz" min="20" max="2000" step="0.1" value="${fmt(layerHz(l))}" aria-label="Frequency in Hz"><span class="unit">Hz</span></span>
+      <input type="range" id="lvol${l.id}" data-k="vol" min="0" max="100" value="${l.vol}" aria-label="Volume">
+      <button class="x" aria-label="Remove tone">×</button>
+    </div>
+    <div class="layer-opts">
+      <select id="lpulse${l.id}" data-k="pulse" aria-label="Rhythm">${PULSES.map(p => `<option value="${p[0]}" ${p[0] === l.pulse ? 'selected' : ''}>${p[1]}</option>`).join('')}</select>
+      <label><input type="checkbox" id="lfollow${l.id}" data-k="follow" ${l.follow ? 'checked' : ''}> Follow the carrier</label>
+    </div>
+    <p class="layer-info" id="linfo${l.id}"></p>
+  </div>`).join('') || '<p class="hint">No extra tones. Add one from the harmonic series or a custom one.</p>';
+  renderLayerInfo();
+}
+function renderLayerInfo() {
+  for (const l of S.layers) {
+    const el = $('linfo' + l.id); if (!el) continue;
+    const f = layerHz(l), nt = noteOf(f), lines = intervalReport(f, S.carrier);
+    lines[0] += ` · nearest key <b>${nt.name}</b> ${centsTxt(nt.cents)}`;
+    if (l.pulse && S.mode !== 'pure') lines.push(`Pulses ${fmt(S.beat / l.pulse)}×/s, ${fitRhythm(S.beat / l.pulse).short} at ♩ = ${S.tempo}`);
+    if (l.pulse && S.mode === 'pure') lines.push('Pulsing needs a beat; switch away from pure tone.');
+    el.innerHTML = lines.join('<br>');
+    const hzIn = $('lhz' + l.id);
+    if (l.follow && document.activeElement !== hzIn) hzIn.value = fmt(f);
+  }
+}
+$('layers').addEventListener('input', e => {
+  const row = e.target.closest('.layer'), k = e.target.dataset.k; if (!row || !k) return;
+  const l = S.layers.find(x => x.id == row.dataset.id);
+  if (k === 'on') l.on = e.target.checked;
+  else if (k === 'vol') l.vol = +e.target.value;
+  else if (k === 'pulse') l.pulse = +e.target.value;
+  else if (k === 'follow') { l.follow = e.target.checked; if (l.follow) l.ratio = l.hz / S.carrier; else l.hz = S.carrier * l.ratio; }
+  else if (k === 'hz') { const v = +e.target.value; if (v >= 20 && v <= 2000) { l.hz = v; l.ratio = v / S.carrier; } }
+  renderLayerInfo(); renderNotes(); syncLayers();
+});
+$('layers').addEventListener('click', e => {
+  if (!e.target.classList.contains('x')) return;
+  const id = +e.target.closest('.layer').dataset.id;
+  S.layers = S.layers.filter(l => l.id !== id); syncLayers(); renderLayers(); renderNotes();
+});
+$('addLayer').addEventListener('click', () => {
+  S.layers.push({ id: nextId++, hz: 432, vol: 30, on: true, pulse: 0, follow: false, ratio: 432 / S.carrier });
+  renderLayers(); renderNotes(); syncLayers();
+});
+$('harmonicChips').innerHTML = HARMONICS.map((h, i) => `<button class="chip" data-i="${i}">${h.name}<small>${h.frac}</small></button>`).join('');
+$('harmonicChips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const h = HARMONICS[+b.dataset.i];
+  S.layers.push({ id: nextId++, hz: S.carrier * h.r, vol: 30, on: true, pulse: 0, follow: true, ratio: h.r });
+  renderLayers(); renderNotes(); syncLayers();
+});
+
+/* ---------- scope ---------- */
+const cv = $('scope'), g2 = cv.getContext('2d');
+let colors = {}, frame = 0, tPlay = 0, last = performance.now();
+function readColors() { const cs = getComputedStyle(document.documentElement); colors = { l: cs.getPropertyValue('--left').trim(), r: cs.getPropertyValue('--right').trim(), line: cs.getPropertyValue('--line').trim() }; }
+function envelope(t) {
+  if (S.mode === 'pure') return 1;
+  if (S.mode === 'isochronic') return 0.5 * (Math.tanh(5 * Math.sin(2 * Math.PI * S.beat * t)) / Math.tanh(5) + 1);
+  return Math.abs(Math.cos(Math.PI * S.beat * t));
+}
+function draw(now) {
+  const dt = (now - last) / 1000; last = now;
+  if (S.playing) tPlay += dt;
+  if (frame++ % 60 === 0) readColors();
+  const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
+  if (W && cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  g2.setTransform(dpr, 0, 0, dpr, 0, 0); g2.clearRect(0, 0, W, H);
+  // show about three beats; the carrier is drawn at 10 cycles per beat so the envelope reads clearly
+  const pure = S.mode === 'pure', span = pure ? 1 : Math.min(2, 3 / S.beat), vis = pure ? 24 : 10 * S.beat;
+  const mid = H / 2, amp = H * 0.4;
+  g2.strokeStyle = colors.line; g2.lineWidth = 1; g2.beginPath(); g2.moveTo(0, mid); g2.lineTo(W, mid); g2.stroke();
+  g2.strokeStyle = colors.l; g2.lineWidth = 1.2; g2.globalAlpha = 0.75; g2.beginPath();
+  for (let x = 0; x <= W; x++) {
+    const t = tPlay + x / W * span, y = mid - envelope(t) * Math.sin(2 * Math.PI * vis * t) * amp;
+    x ? g2.lineTo(x, y) : g2.moveTo(x, y);
+  }
+  g2.stroke(); g2.globalAlpha = 1;
+  g2.strokeStyle = colors.r; g2.lineWidth = 2; g2.beginPath();
+  for (let x = 0; x <= W; x += 2) { const y = mid - envelope(tPlay + x / W * span) * amp; x ? g2.lineTo(x, y) : g2.moveTo(x, y); }
+  g2.stroke();
+  // light up the note that matches the current pulse
+  if (notationTotal) {
+    const i = S.playing ? Math.floor(tPlay * S.beat) % notationTotal : -1;
+    if (i !== litNote) {
+      document.querySelectorAll('#notation .nh.on').forEach(n => n.classList.remove('on'));
+      if (i >= 0) document.querySelector(`#notation .nh[data-i="${i}"]`)?.classList.add('on');
+      litNote = i;
+    }
+    const b = i >= 0 ? Math.floor(i / perBeat) : -1, arrow = $('beatArrow');
+    if (arrow && b !== litBeat) {
+      const k = Math.max(b, 0);
+      arrow.style.transform = `translateX(${beatXs[k]}px)`;
+      arrow.querySelector('text').textContent = k + 1;
+      arrow.classList.toggle('idle', b < 0);
+      litBeat = b;
+    }
+  }
+  pacerFrame(now);
+  requestAnimationFrame(draw);
+}
+
+/* ---------- breathing pacer ---------- */
+const P = { ph: [5.5, 0, 5.5, 0], shape: 'circle', on: false, start: 0, last: -1, cycles: 0 };
+const PHASE_WORD = ['Breathe in', 'Hold', 'Breathe out', 'Hold'];
+const PHASE_CLS = ['seg-in', 'seg-hold', 'seg-out', 'seg-hold'];
+const BREATHS = [
+  { name: 'Resonance', ph: [5.5, 0, 5.5, 0] }, { name: 'Box', ph: [4, 4, 4, 4] }, { name: '4-7-8', ph: [4, 7, 8, 0] },
+  { name: 'Long exhale', ph: [4, 0, 6, 0] }, { name: 'Gentle box', ph: [5, 2, 5, 2] }
+];
+const total = () => P.ph.reduce((a, b) => a + b, 0);
+const ease = p => 0.5 - 0.5 * Math.cos(Math.PI * p);
+const SQ = [[40, 260], [40, 40], [260, 40], [260, 260]]; // corners: inhale climbs the left side, hold crosses the top, exhale descends, hold returns
+const polar = (deg, r = 120) => [150 + r * Math.cos(deg * Math.PI / 180), 150 + r * Math.sin(deg * Math.PI / 180)];
+function buildPacer() {
+  const out = [], T = total();
+  if (P.shape === 'circle') {
+    out.push(`<circle class="track" cx="150" cy="150" r="120"/>`);
+    let a = -90;
+    P.ph.forEach((d, i) => {
+      if (!d) return;
+      const sweep = Math.min(d / T * 360, 359.9), b = a + sweep, [x0, y0] = polar(a + 1.5), [x1, y1] = polar(b - 1.5);
+      out.push(`<path class="seg ${PHASE_CLS[i]}" d="M${x0} ${y0} A120 120 0 ${sweep > 180 ? 1 : 0} 1 ${x1} ${y1}"/>`);
+      a = b;
+    });
+    out.push(`<circle class="inner" id="pInner" cx="150" cy="150" r="40"/>`);
+  } else {
+    out.push(`<rect class="track" x="40" y="40" width="220" height="220" rx="6"/>`);
+    P.ph.forEach((d, i) => {
+      const [x0, y0] = SQ[i], [x1, y1] = SQ[(i + 1) % 4];
+      out.push(`<line class="seg ${PHASE_CLS[i]}" x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" ${d ? '' : 'stroke-dasharray="2 10" opacity=".35"'}/>`);
+    });
+    out.push(`<rect class="inner" id="pInner" x="110" y="110" width="80" height="80" rx="4"/>`);
+  }
+  out.push(`<circle class="dot" id="pDot" cx="150" cy="30" r="10"/>`);
+  out.push(`<text class="word" id="pWord" x="150" y="152">Ready</text><text class="count" id="pCount" x="150" y="178"></text>`);
+  $('pacerSvg').innerHTML = out.join('');
+  document.querySelectorAll('#shapes button').forEach(b => b.setAttribute('aria-pressed', b.dataset.shape === P.shape));
+  P.ph.forEach((v, i) => { if (document.activeElement !== $('ph' + i)) $('ph' + i).value = v; });
+  $('pacerStats').textContent = `${fmt(60 / T)} breaths/min · ${fmtHz(T)} s per breath`;
+  placePacer(0, 0, 0);
+}
+function placePacer(i, p, e) {
+  const dot = $('pDot'), inner = $('pInner'); if (!dot) return;
+  let x, y;
+  if (P.shape === 'circle') {
+    const T = total(), before = P.ph.slice(0, i).reduce((a, b) => a + b, 0);
+    [x, y] = polar(-90 + (before + p * P.ph[i]) / T * 360);
+    inner.setAttribute('r', 40 + 62 * e);
+  } else {
+    const [x0, y0] = SQ[i], [x1, y1] = SQ[(i + 1) % 4];
+    x = x0 + (x1 - x0) * p; y = y0 + (y1 - y0) * p;
+    const s = 70 + 110 * e; inner.setAttribute('x', 150 - s / 2); inner.setAttribute('y', 150 - s / 2);
+    inner.setAttribute('width', s); inner.setAttribute('height', s);
+  }
+  dot.setAttribute('cx', x); dot.setAttribute('cy', y);
+}
+function chime(i) {
+  if (!$('cue').checked || !ctx) return;
+  const o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime;
+  o.type = 'sine'; o.frequency.value = [523.25, 392, 329.63, 392][i];
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.12, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+  o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + 1.3);
+}
+function pacerFrame(now) {
+  if (!P.on) return;
+  const T = total(), el = (now - P.start) / 1000, t = el % T;
+  let i = 0, acc = 0;
+  while (i < 3 && t >= acc + P.ph[i]) { acc += P.ph[i]; i++; }
+  const p = P.ph[i] ? (t - acc) / P.ph[i] : 1;
+  const e = i === 0 ? ease(p) : i === 1 ? 1 : i === 2 ? 1 - ease(p) : 0;
+  placePacer(i, p, e);
+  if (i !== P.last) { P.last = i; chime(i); $('pWord').textContent = PHASE_WORD[i]; }
+  P.cycles = Math.floor(el / T);
+  $('pCount').textContent = `${Math.ceil(P.ph[i] - (t - acc))} · breath ${P.cycles + 1}`;
+}
+function setPacer(on) {
+  P.on = on; P.start = performance.now(); P.last = -1;
+  $('pacerBtn').textContent = on ? 'Stop pacer' : 'Start pacer';
+  $('pacerBtn').setAttribute('aria-pressed', on);
+  if (on) { if ($('cue').checked) { ensureCtx(); ctx.resume(); } requestWake(); }
+  else { buildPacer(); releaseWake(); }
+}
+$('pacerBtn').addEventListener('click', () => setPacer(!P.on));
+$('cue').addEventListener('change', e => { if (e.target.checked) { ensureCtx(); ctx.resume(); } });
+[0, 1, 2, 3].forEach(i => $('ph' + i).addEventListener('change', e => {
+  P.ph[i] = clamp(Math.round((+e.target.value || 0) * 2) / 2, i % 2 ? 0 : 1, 20);
+  e.target.value = P.ph[i]; buildPacer(); if (P.on) { P.start = performance.now(); P.last = -1; }
+}));
+$('breathPresets').innerHTML = BREATHS.map((b, i) => `<button class="chip" data-i="${i}">${b.name}<small>${b.ph.join('-')}</small></button>`).join('');
+$('breathPresets').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  P.ph = BREATHS[+b.dataset.i].ph.slice(); buildPacer(); if (P.on) { P.start = performance.now(); P.last = -1; }
+});
+$('shapes').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  P.shape = b.dataset.shape; buildPacer(); P.last = -1;
+});
+// full screen, falling back to a full-window view where the browser refuses it (iPhone, embedded frames)
+const panel = $('pacerPanel');
+function setFocus(on) { panel.classList.toggle('focus', on); document.body.style.overflow = on ? 'hidden' : ''; }
+$('fsBtn').addEventListener('click', async () => {
+  try { if (panel.requestFullscreen) await panel.requestFullscreen(); else setFocus(true); }
+  catch (e) { setFocus(true); }
+});
+$('exitFs').addEventListener('click', () => { if (document.fullscreenElement) document.exitFullscreen(); setFocus(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && panel.classList.contains('focus')) setFocus(false); });
+
+/* citations: jump to the source, highlight it, and offer a way back to where you were reading */
+let citedFrom = null;
+document.addEventListener('click', e => {
+  const a = e.target.closest('sup a[href^="#ref-"]'); if (!a) return;
+  e.preventDefault();
+  const li = document.getElementById(a.getAttribute('href').slice(1)); if (!li) return;
+  citedFrom = a;
+  document.querySelectorAll('.refs .back').forEach(b => b.remove());
+  const back = document.createElement('button');
+  back.className = 'back'; back.textContent = '↩ Back to text';
+  back.addEventListener('click', () => { citedFrom?.scrollIntoView({ behavior: 'smooth', block: 'center' }); citedFrom?.focus(); back.remove(); });
+  li.appendChild(back);
+  li.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  li.classList.add('flash'); setTimeout(() => li.classList.remove('flash'), 1800);
+});
+
+readColors(); renderLayers(); render(); buildPacer();
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
